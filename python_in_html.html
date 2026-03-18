@@ -44,6 +44,25 @@
       font-size: 20px;
     }
 
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .header-link {
+      color: #1b5fcf;
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .header-link:hover {
+      color: #0f4499;
+      text-decoration: underline;
+    }
+
     h2 {
       font-size: 16px;
       margin: 0 0 10px 0;
@@ -631,7 +650,10 @@
   </style>
 </head>
 <body>
-  <h1>Python in HTML</h1>
+  <div class="page-header">
+    <h1>Python in HTML</h1>
+    <a class="header-link" href="./ReadMe.html" target="_blank" rel="noopener noreferrer">ReadMe</a>
+  </div>
 
   <div class="top-stack">
     <div id="configPanel" class="panel resizable-subpanel">

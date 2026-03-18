@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pyodide Data Sandbox - User Guide</title>
+  <title>Python in HTML - User Guide</title>
   <style>
     body {
       font-family: system-ui, sans-serif;
@@ -142,49 +142,52 @@
 </head>
 <body>
   <div class="container">
-    <h1>Pyodide Data Sandbox - User Guide</h1>
+    <h1>Python in HTML - User Guide</h1>
 
     <div class="section">
       <h2>1. Overview</h2>
       <p>
-        This tool runs Python directly in your browser using Pyodide.
-        You can upload data files, write Python code with
-        <code>pandas</code>, <code>numpy</code>, and <code>matplotlib</code>,
-        and then inspect the output, generated images, and downloadable result files.
+        <strong>Python in HTML</strong> runs Python directly in the browser using Pyodide.
+        You can load input files, edit Python code in cell form, run one cell or all cells,
+        and inspect per-operation results including text output, images, and downloadable files.
       </p>
       <p>Main features:</p>
       <ul>
         <li>No local Python installation required</li>
-        <li>Supports CSV, JSON, and TXT files</li>
-        <li>Editable Python code area</li>
-        <li>Standard output and error display</li>
-        <li>Image preview for generated plots</li>
-        <li>Download links for generated output files</li>
+        <li>Input files are available under <code>/inputs/</code></li>
+        <li>Generated files are available under <code>/outputs/</code></li>
+        <li>Cell-based execution with <code># %%</code></li>
+        <li>Config save/load/restore support</li>
+        <li>Per-operation result history on the right side</li>
+        <li>Image preview and download links for generated outputs</li>
       </ul>
     </div>
 
     <div class="section">
       <h2>2. Basic Workflow</h2>
       <ol>
-        <li>Upload one or more files</li>
-        <li>Write or edit Python code</li>
-        <li>Click <code>Run Python</code></li>
-        <li>Check output, images, and downloadable files</li>
+        <li>Choose input files in the <strong>Input files</strong> panel</li>
+        <li>Edit the code in the <strong>Python code</strong> editor</li>
+        <li>Run the current cell or all cells</li>
+        <li>Check <strong>Operation Results</strong> for stdout, stderr, images, and downloads</li>
       </ol>
     </div>
 
     <div class="section">
-      <h2>3. Uploading Files</h2>
+      <h2>3. Input Files</h2>
       <p>
-        Files can be uploaded either by drag and drop or by using the file selection button.
+        Input files are selected with the <code>Choose Files</code> button.
+        Supported file types in the current UI are <code>.csv</code>, <code>.json</code>, and <code>.txt</code>.
       </p>
       <p>
-        Uploaded files are stored in the browser-side virtual file system and can be accessed from Python under:
+        Selected files are stored in the browser-side virtual file system under:
       </p>
-      <div class="path">/uploads/your_file_name</div>
+      <div class="path">/inputs/your_file_name</div>
 
       <p>Example:</p>
-      <pre><code>df = pd.read_csv("/uploads/sample_user.csv")</code></pre>
+      <pre><code>import pandas as pd
+
+df = pd.read_csv("/inputs/sample_user.csv")</code></pre>
 
       <div class="warn">
         File names must match exactly.
@@ -193,88 +196,136 @@
     </div>
 
     <div class="section">
-      <h2>4. Writing Python Code</h2>
+      <h2>4. Output Files</h2>
       <p>
-        You can freely edit the Python code in the editor area.
-        The environment supports common data-processing tasks with:
+        Files written to <code>/outputs/</code> are treated as generated results.
       </p>
       <ul>
-        <li><code>pandas</code></li>
-        <li><code>numpy</code></li>
-        <li><code>matplotlib</code></li>
+        <li>Image files such as <code>.png</code> appear in <strong>Images</strong></li>
+        <li>All generated files appear in <strong>Downloads</strong></li>
       </ul>
 
-      <p>Simple example:</p>
-      <pre><code>import pandas as pd
-
-df = pd.read_csv("/uploads/sample_user.csv")
-print(df.head())</code></pre>
+      <pre><code>plt.savefig("/outputs/plot.png")
+df.to_csv("/outputs/result.csv", index=False)</code></pre>
     </div>
 
     <div class="section">
-      <h2>5. Standard Output and Errors</h2>
+      <h2>5. Cell-Based Execution</h2>
       <p>
-        Anything printed with <code>print()</code> appears in the
-        <strong>Stdout / stderr</strong> area.
-      </p>
-      <p>
-        If an error occurs, the traceback is also shown there.
+        Use <code># %%</code> to split code into cells.
+        <strong>Run Current Cell</strong> executes the cell that contains the cursor.
+        <strong>Run All Cells</strong> executes cells from top to bottom and records each cell as a separate result card.
       </p>
 
-      <p>Example:</p>
-      <pre><code>print("Hello")
-print(df.shape)</code></pre>
+      <pre><code># %%
+print("cell 1")
+
+# %%
+print("cell 2")</code></pre>
     </div>
 
     <div class="section">
-      <h2>6. Saving Images</h2>
-      <p>
-        To show a plot in the <strong>Images</strong> area, save it under <code>/outputs/</code>.
-      </p>
-
-      <pre><code>import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
-plt.plot([1, 2, 3], [10, 20, 15])
-plt.title("Sample Plot")
-plt.savefig("/outputs/plot.png")</code></pre>
-
-      <p>
-        Saved image files such as <code>.png</code> are automatically shown in the UI.
+      <h2>6. Keyboard Shortcuts</h2>
+      <table class="table-like">
+        <thead>
+          <tr>
+            <th>Shortcut</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Shift + Enter</code></td>
+            <td>Run the current cell</td>
+          </tr>
+          <tr>
+            <td><code>Ctrl + Enter</code></td>
+            <td>Run the current cell and move to the next visible cell</td>
+          </tr>
+          <tr>
+            <td><code>Tab</code></td>
+            <td>Indent selected code</td>
+          </tr>
+          <tr>
+            <td><code>Shift + Tab</code></td>
+            <td>Outdent selected code</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="small">
+        If <code>Ctrl + Enter</code> is used on the last visible cell, a new <code># %%</code> cell is created at the end and the cursor moves into it.
       </p>
     </div>
 
     <div class="section">
-      <h2>7. Saving Downloadable Files</h2>
+      <h2>7. Configuration</h2>
       <p>
-        Files written under <code>/outputs/</code> appear in the <strong>Downloads</strong> area.
+        The <strong>Configuration</strong> panel lets you control Python packages and save or load your current setup.
       </p>
-
-      <pre><code>df.to_csv("/outputs/result.csv", index=False)</code></pre>
-
+      <ul>
+        <li><code>Save Config</code>: export the current code and selected packages as JSON</li>
+        <li><code>Load Config</code>: load a previously saved JSON config</li>
+        <li><code>Restore Default</code>: restore the built-in default code and package set</li>
+        <li><code>Show Config / Hide Config</code>: expand or collapse the full configuration UI</li>
+      </ul>
       <p>
-        This can be used for processed CSV files, JSON files, text files, and plot images.
+        Package selection is limited to an allowlist of Pyodide built-in packages.
       </p>
     </div>
 
     <div class="section">
-      <h2>8. Sample Use Case: Join Two CSV Files and Draw a Chart</h2>
-      <p>Upload the following two files:</p>
+      <h2>8. Package Filters</h2>
+      <p>
+        In the package picker, packages can be filtered by two axes at the same time:
+      </p>
+      <ul>
+        <li><strong>Level</strong>: <code>Recommended</code>, <code>Standard</code>, <code>Advanced</code>, <code>All</code></li>
+        <li><strong>Domain</strong>: <code>Analysis</code>, <code>ML</code>, <code>Plot</code>, <code>Text</code>, <code>DB</code>, <code>Image</code>, <code>Geo</code>, <code>Science</code>, <code>Utility</code>, <code>All</code></li>
+      </ul>
+      <p>
+        The search box works together with both filters.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>9. Operation Results</h2>
+      <p>
+        Every action is recorded on the right side as an operation card.
+      </p>
+      <p>Examples:</p>
+      <ul>
+        <li><code>Choose Files</code></li>
+        <li><code>Delete File</code></li>
+        <li><code>Run Current Cell n</code></li>
+        <li><code>Reset Session</code></li>
+        <li><code>Restore Default</code></li>
+      </ul>
+      <p>
+        For cell execution, each card may contain:
+      </p>
+      <ul>
+        <li><strong>Stdout / stderr</strong></li>
+        <li><strong>Images</strong></li>
+        <li><strong>Downloads</strong></li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>10. Sample Use Case</h2>
+      <p>Use these sample files:</p>
       <ul>
         <li><code>sample_user.csv</code></li>
         <li><code>sample_purchase.csv</code></li>
       </ul>
 
-      <p>Example code:</p>
       <pre><code>import pandas as pd
 import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-users = pd.read_csv("/uploads/sample_user.csv")
-purchases = pd.read_csv("/uploads/sample_purchase.csv")
+users = pd.read_csv("/inputs/sample_user.csv")
+purchases = pd.read_csv("/inputs/sample_purchase.csv")
 
 df = pd.merge(purchases, users, on="user_id", how="left")
 
@@ -300,108 +351,66 @@ summary.to_csv("/outputs/user_summary.csv", index=False)</code></pre>
     </div>
 
     <div class="section">
-      <h2>9. How to Check Uploaded File Names</h2>
-      <p>
-        If you are unsure about the uploaded file names, run:
-      </p>
+      <h2>11. Helpful Commands</h2>
+      <p>If you are unsure which input files are currently available, run:</p>
       <pre><code>import os
-print(os.listdir("/uploads"))</code></pre>
-      <p>
-        This is useful when you get a <code>FileNotFoundError</code>.
-      </p>
+print(os.listdir("/inputs"))</code></pre>
+
+      <p>If you want to inspect generated files, run:</p>
+      <pre><code>import os
+print(os.listdir("/outputs"))</code></pre>
     </div>
 
     <div class="section">
-      <h2>10. Supported File Types</h2>
-      <table class="table-like">
-        <thead>
-          <tr>
-            <th>File type</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>CSV</td>
-            <td>Supported</td>
-          </tr>
-          <tr>
-            <td>JSON</td>
-            <td>Supported</td>
-          </tr>
-          <tr>
-            <td>TXT</td>
-            <td>Supported</td>
-          </tr>
-          <tr>
-            <td>Excel (.xlsx, .xls)</td>
-            <td>Not supported in this version</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="section">
-      <h2>11. Notes and Limitations</h2>
+      <h2>12. Notes and Limitations</h2>
       <div class="note">
         All processing happens in the browser.
-        Uploaded files are not automatically sent to a server by this tool.
+        Files are handled in the in-browser virtual file system used by Pyodide.
       </div>
       <ul>
         <li>Large files may be slow because processing uses browser memory</li>
-        <li>Uploaded files disappear when the page is reloaded</li>
-        <li>Only files under <code>/uploads/</code> can be read</li>
-        <li>Only files under <code>/outputs/</code> appear as downloadable results</li>
+        <li>Input files and runtime state disappear when the page is reloaded</li>
+        <li>Only files under <code>/inputs/</code> are treated as input files</li>
+        <li>Only files under <code>/outputs/</code> appear as generated results</li>
+        <li>Package choices are limited to the built-in allowlist defined by this app</li>
       </ul>
     </div>
 
     <div class="section">
-      <h2>12. Troubleshooting</h2>
+      <h2>13. Troubleshooting</h2>
 
       <h3>FileNotFoundError</h3>
       <p>
-        The file path in Python does not match the uploaded file name.
+        The file path in Python does not match the selected input file name.
       </p>
       <pre><code>import os
-print(os.listdir("/uploads"))</code></pre>
+print(os.listdir("/inputs"))</code></pre>
 
       <h3>No image appears</h3>
       <p>
-        Make sure the plot is saved under <code>/outputs/</code>.
+        Make sure the image is written under <code>/outputs/</code>.
       </p>
       <pre><code>plt.savefig("/outputs/plot.png")</code></pre>
 
-      <h3>No downloadable file appears</h3>
+      <h3>No download link appears</h3>
       <p>
         Make sure the file is written under <code>/outputs/</code>.
       </p>
+
+      <h3>Load Config does not restore a package</h3>
+      <p>
+        Only packages included in the app's allowlist are restored from config files.
+      </p>
     </div>
 
     <div class="section">
-      <h2>13. Minimal Template</h2>
-      <p>
-        If you only need a simple CSV read and export workflow, start with this:
-      </p>
+      <h2>14. Minimal Template</h2>
       <pre><code>import pandas as pd
 
-df = pd.read_csv("/uploads/your_file.csv")
+df = pd.read_csv("/inputs/your_file.csv")
 print(df.head())
 
 df.to_csv("/outputs/result.csv", index=False)</code></pre>
-    </div>
-
-    <div class="section">
-      <h2>14. Recommended Sample Files</h2>
-      <p>
-        For practice, use the following sample files:
-      </p>
-      <ul>
-        <li><code>sample_user.csv</code></li>
-        <li><code>sample_purchase.csv</code></li>
-      </ul>
-      <p class="small">
-        These files can be used together with the example code in Section 8.
-      </p>
     </div>
   </div>
 </body>
