@@ -108,34 +108,6 @@
       background: #fcfcfc;
     }
 
-    .panel-resize-handle {
-      height: 14px;
-      position: relative;
-      cursor: ns-resize;
-    }
-
-    .panel-resize-handle::before {
-      content: "";
-      position: absolute;
-      left: 50%;
-      top: 5px;
-      width: 56px;
-      height: 4px;
-      margin-left: -28px;
-      border-radius: 999px;
-      background: #d7d7d7;
-    }
-
-    .panel-resize-handle:hover::before,
-    .panel-resize-handle.is-dragging::before {
-      background: #1b5fcf;
-    }
-
-    .top-panel {
-      overflow: auto;
-      min-height: 140px;
-    }
-
     .CodeMirror-gutters {
       border-right: 1px solid #ececec;
       background: #f7f7f7;
@@ -215,7 +187,7 @@
       align-content: start;
     }
 
-    .uploaded-files-box {
+    .input-files-box {
       max-height: 132px;
       overflow: auto;
       padding-right: 6px;
@@ -230,6 +202,21 @@
     .small-btn {
       padding: 2px 8px;
       font-size: 12px;
+    }
+
+    .text-link-btn {
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: #1b5fcf;
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    .text-link-btn:hover {
+      color: #0f4499;
+      text-decoration: underline;
     }
 
     .toolbar {
@@ -272,10 +259,91 @@
       cursor: default;
     }
 
+    .icon-btn.is-active {
+      border-color: #1b5fcf;
+      background: #eaf2ff;
+      color: #0f4499;
+    }
+
     .config-grid {
       display: grid;
       gap: 12px;
       margin-top: 12px;
+    }
+
+    .subpanel {
+      background: #fbfbfb;
+      border: 1px solid #e3e3e3;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .subpanel + .subpanel {
+      margin-top: 4px;
+    }
+
+    .resizable-subpanel {
+      overflow: auto;
+      min-height: 76px;
+    }
+
+    .subpanel-resize-handle {
+      height: 8px;
+      position: relative;
+      cursor: ns-resize;
+      margin: 0;
+    }
+
+    .subpanel-resize-handle::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 2px;
+      width: 40px;
+      height: 3px;
+      margin-left: -20px;
+      border-radius: 999px;
+      background: #d7d7d7;
+    }
+
+    .subpanel-resize-handle:hover::before,
+    .subpanel-resize-handle.is-dragging::before {
+      background: #1b5fcf;
+    }
+
+    .top-stack {
+      display: grid;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .top-stack > .panel {
+      margin-bottom: 0;
+      padding: 6px;
+    }
+
+    .top-stack-resize-handle {
+      height: 8px;
+      position: relative;
+      cursor: ns-resize;
+      margin: 0;
+    }
+
+    .top-stack-resize-handle::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 2px;
+      width: 44px;
+      height: 3px;
+      margin-left: -22px;
+      border-radius: 999px;
+      background: #d7d7d7;
+    }
+
+    .top-stack-resize-handle:hover::before,
+    .top-stack-resize-handle.is-dragging::before {
+      background: #1b5fcf;
     }
 
     .config-summary-row {
@@ -288,7 +356,7 @@
 
     .config-summary {
       display: grid;
-      gap: 4px;
+      gap: 2px;
       min-width: 0;
       flex: 1 1 auto;
     }
@@ -314,7 +382,7 @@
 
     .package-summary {
       display: grid;
-      gap: 4px;
+      gap: 2px;
       min-width: 0;
       flex: 1 1 auto;
     }
@@ -439,11 +507,13 @@
     .selected-packages {
       font-size: 12px;
       color: #555;
+      margin: 0;
     }
 
     .muted {
       color: #666;
       font-size: 12px;
+      margin: 0;
     }
 
     .status {
@@ -512,14 +582,14 @@
       background: #fff;
     }
 
-    #uploadedFiles ul,
+    #inputFiles ul,
     .download-list,
     .file-list {
       margin: 8px 0 0;
       padding-left: 20px;
     }
 
-    #uploadedFiles li,
+    #inputFiles li,
     .download-list li,
     .file-list li {
       margin-bottom: 8px;
@@ -532,82 +602,78 @@
       border-radius: 4px;
     }
 
-    .current-cell-info {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #444;
-    }
   </style>
 </head>
 <body>
   <h1>Pyodide Data Sandbox (Current Cell)</h1>
 
-  <div id="topPanel" class="panel top-panel">
-    <div class="config-summary-row">
-      <div class="config-summary">
-        <p class="muted">Configuration</p>
-        <div id="configSummaryText" class="selected-packages">Packages: numpy, pandas, matplotlib</div>
+  <div class="top-stack">
+    <div id="configPanel" class="panel resizable-subpanel">
+      <div class="config-summary-row">
+        <div class="config-summary">
+          <p class="muted">Configuration</p>
+          <div id="configSummaryText" class="selected-packages">Selected packages: numpy, pandas, matplotlib</div>
+        </div>
+        <button id="toggleConfigBtn" class="text-link-btn" type="button">Edit Config ▾</button>
       </div>
-      <button id="toggleConfigBtn" type="button">Edit Config ▾</button>
-    </div>
 
-    <div id="configControls" class="config-controls" hidden>
-      <div class="section-divider" aria-hidden="true"></div>
-      <div class="config-grid">
-        <div>
-          <div class="package-summary-row">
-            <div class="package-summary">
-              <p class="muted">Python packages</p>
-              <div id="packageCount" class="package-count">3 selected</div>
-              <p id="selectedPackages" class="selected-packages">Selected: numpy, pandas, matplotlib</p>
+      <div id="configControls" class="config-controls" hidden>
+        <div class="section-divider" aria-hidden="true"></div>
+        <div class="config-grid">
+          <div>
+            <div class="package-summary-row">
+              <div class="package-summary">
+                <p class="muted">Python packages</p>
+                <div id="packageCount" class="package-count">3 selected</div>
+                <p id="selectedPackages" class="selected-packages">Selected: numpy, pandas, matplotlib</p>
+              </div>
+              <button id="togglePackagesBtn" type="button">Edit Packages</button>
             </div>
-            <button id="togglePackagesBtn" type="button">Edit Packages</button>
+            <div id="packageControls" class="package-controls" hidden>
+              <div class="package-toolbar">
+                <input id="packageSearch" class="package-search" type="search" placeholder="Search packages" />
+                <div class="filter-group">
+                  <div class="filter-label">Level</div>
+                  <div id="packageLevelFilters" class="filter-list"></div>
+                </div>
+                <div class="filter-group">
+                  <div class="filter-label">Domain</div>
+                  <div id="packageDomainFilters" class="filter-list"></div>
+                </div>
+              </div>
+              <div id="packageList" class="package-list"></div>
+            </div>
           </div>
-          <div id="packageControls" class="package-controls" hidden>
-            <div class="package-toolbar">
-              <input id="packageSearch" class="package-search" type="search" placeholder="Search packages" />
-              <div class="filter-group">
-                <div class="filter-label">Level</div>
-                <div id="packageLevelFilters" class="filter-list"></div>
-              </div>
-              <div class="filter-group">
-                <div class="filter-label">Domain</div>
-                <div id="packageDomainFilters" class="filter-list"></div>
-              </div>
-            </div>
-            <div id="packageList" class="package-list"></div>
+
+          <div class="toolbar">
+            <button id="saveConfigBtn" type="button">Save Config</button>
+            <button id="loadConfigBtn" type="button">Load Config</button>
+            <button id="restoreConfigBtn" type="button">Restore Default</button>
+            <input id="configFileInput" class="file-input" type="file" accept=".json,application/json" />
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="toolbar">
-          <button id="saveConfigBtn" type="button">Save Config</button>
-          <button id="loadConfigBtn" type="button">Load Config</button>
-          <button id="restoreConfigBtn" type="button">Restore Default</button>
-          <input id="configFileInput" class="file-input" type="file" accept=".json,application/json" />
+    <div id="configInputResizeHandle" class="subpanel-resize-handle" aria-hidden="true"></div>
+
+    <div id="inputPanel" class="panel">
+      <div class="upload-row">
+        <div class="upload-actions">
+          <p class="muted">Input files</p>
+          <label for="fileInput" class="file-input-label">Choose Files</label>
+          <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json" />
+        </div>
+        <div class="upload-divider" aria-hidden="true"></div>
+        <div class="upload-summary">
+          <p class="muted">Input files</p>
+          <div id="inputFiles" class="input-files-box">No input files selected yet.</div>
         </div>
       </div>
     </div>
-
-    <div class="section-divider" aria-hidden="true"></div>
-
-    <div class="upload-row">
-      <div class="upload-actions">
-        <p class="muted">Select files to upload.</p>
-        <label for="fileInput" class="file-input-label">Choose Files</label>
-        <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json" />
-      </div>
-      <div class="upload-divider" aria-hidden="true"></div>
-      <div class="upload-summary">
-        <p class="muted">Uploaded files</p>
-        <div id="uploadedFiles" class="uploaded-files-box">No files uploaded yet.</div>
-      </div>
-    </div>
-
-    <p class="status" id="status">Initializing Pyodide...</p>
-    <div id="currentCellInfo" class="current-cell-info">Current cell: -</div>
   </div>
 
-  <div id="topPanelResizeHandle" class="panel-resize-handle" aria-hidden="true"></div>
+  <div id="topStackResizeHandle" class="top-stack-resize-handle" aria-hidden="true"></div>
 
   <div class="row">
     <div id="editorCol" class="col editor-col">
@@ -619,6 +685,7 @@
             <button id="runAllBtn" class="icon-btn" type="button" title="Run All Cells" aria-label="Run All Cells" disabled>≫</button>
             <button id="resetSessionBtn" class="icon-btn" type="button" title="Reset Session" aria-label="Reset Session" disabled>↺</button>
             <button id="clearOutputBtn" class="icon-btn" type="button" title="Clear Output" aria-label="Clear Output">⌫</button>
+            <button id="toggleWrapBtn" class="icon-btn" type="button" title="Toggle Code Wrap" aria-label="Toggle Code Wrap">↵</button>
           </div>
         </div>
         <p class="muted">Use <code># %%</code> to split cells. Run Current Cell executes the cell containing the cursor.</p>
@@ -630,11 +697,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-print("files in /uploads =", os.listdir("/uploads"))
+print("files in /inputs =", os.listdir("/inputs"))
 
 # %%
-users = pd.read_csv("/uploads/sample_user.csv")
-purchases = pd.read_csv("/uploads/sample_purchase.csv")
+users = pd.read_csv("/inputs/sample_user.csv")
+purchases = pd.read_csv("/inputs/sample_purchase.csv")
 
 print("\n[users]")
 print(users.head())
@@ -764,11 +831,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-print("files in /uploads =", os.listdir("/uploads"))
+print("files in /inputs =", os.listdir("/inputs"))
 
 # %%
-users = pd.read_csv("/uploads/sample_user.csv")
-purchases = pd.read_csv("/uploads/sample_purchase.csv")
+users = pd.read_csv("/inputs/sample_user.csv")
+purchases = pd.read_csv("/inputs/sample_purchase.csv")
 
 print("\\n[users]")
 print(users.head())
@@ -823,10 +890,14 @@ print(" - /outputs/user_summary.csv")
     let activePackageDomain = "All";
     let packageSearchQuery = "";
     let selectedPackagesState = new Set(defaultConfig.packages);
+    let isCodeWrapEnabled = false;
     let isConfigPanelOpen = false;
     let isPackagePanelOpen = false;
     let isResizingColumns = false;
-    let isResizingTopPanel = false;
+    let isResizingConfigPanel = false;
+    let isResizingInputPanel = false;
+    let configPanelHeight = null;
+    let inputPanelHeight = null;
 
     /** @type {Map<string, File>} */
     let currentFiles = new Map();
@@ -849,7 +920,7 @@ print(" - /outputs/user_summary.csv")
      * @param {string} text
      */
     function setStatus(text) {
-      document.getElementById("status").textContent = text;
+      void text;
     }
 
     /**
@@ -880,44 +951,102 @@ print(" - /outputs/user_summary.csv")
     }
 
     /**
-     * Update the top panel height based on viewport Y.
+     * Update the configuration panel height based on viewport Y.
      * @param {number} clientY
      */
-    function setTopPanelHeight(clientY) {
-      const topPanelEl = document.getElementById("topPanel");
-      if (!topPanelEl) {
+    function setConfigPanelHeight(clientY) {
+      const configPanelEl = document.getElementById("configPanel");
+      const inputPanelEl = document.getElementById("inputPanel");
+      if (!configPanelEl || !inputPanelEl) {
         return;
       }
 
-      const panelRect = topPanelEl.getBoundingClientRect();
-      const minHeight = 140;
-      const nextHeight = Math.max(minHeight, clientY - panelRect.top);
-      topPanelEl.style.height = `${nextHeight}px`;
+      const panelRect = configPanelEl.getBoundingClientRect();
+      const inputPanelRect = inputPanelEl.getBoundingClientRect();
+      const minHeight = 76;
+      const handleHeight = 14;
+      const stackGap = 12;
+      const maxHeight = Math.max(
+        minHeight,
+        Math.floor(inputPanelRect.top - panelRect.top - handleHeight - stackGap)
+      );
+      configPanelHeight = Math.max(minHeight, Math.min(maxHeight, clientY - panelRect.top));
+      configPanelEl.style.height = `${configPanelHeight}px`;
+    }
+
+    /**
+     * Update the input panel height based on viewport Y.
+     * @param {number} clientY
+     */
+    function setInputPanelHeight(clientY) {
+      const inputPanelEl = document.getElementById("inputPanel");
+      if (!inputPanelEl) {
+        return;
+      }
+
+      const panelRect = inputPanelEl.getBoundingClientRect();
+      const minHeight = 88;
+      const minEditorHeight = 280;
+      const handleHeight = 14;
+      const viewportPadding = 16;
+      const maxHeight = Math.max(
+        minHeight,
+        Math.floor(window.innerHeight - panelRect.top - handleHeight - minEditorHeight - viewportPadding)
+      );
+      inputPanelHeight = Math.max(minHeight, Math.min(maxHeight, clientY - panelRect.top));
+      inputPanelEl.style.height = `${inputPanelHeight}px`;
       syncEditorHeight();
     }
 
     /**
-     * Resize the top panel to fit its current content while keeping room for the editor.
+     * Apply the current configuration panel height mode.
      */
-    function fitTopPanelToContent() {
-      const topPanelEl = document.getElementById("topPanel");
-      if (!topPanelEl) {
+    function syncConfigPanelHeight() {
+      const configPanelEl = document.getElementById("configPanel");
+      if (!configPanelEl) {
         return;
       }
 
-      const minHeight = 140;
-      const minEditorHeight = 280;
-      const handleHeight = 14;
-      const viewportPadding = 16;
-      const panelTop = topPanelEl.getBoundingClientRect().top;
-      const maxHeight = Math.max(
-        minHeight,
-        Math.floor(window.innerHeight - panelTop - handleHeight - minEditorHeight - viewportPadding)
-      );
+      if (!isConfigPanelOpen) {
+        configPanelEl.style.height = "auto";
+        return;
+      }
 
-      topPanelEl.style.height = "auto";
-      const nextHeight = Math.max(minHeight, Math.min(maxHeight, topPanelEl.scrollHeight));
-      topPanelEl.style.height = `${nextHeight}px`;
+      if (configPanelHeight !== null) {
+        configPanelEl.style.height = `${configPanelHeight}px`;
+        return;
+      }
+
+      configPanelEl.style.height = "auto";
+    }
+
+    /**
+     * Apply the current input panel height mode.
+     */
+    function syncInputPanelHeight() {
+      const inputPanelEl = document.getElementById("inputPanel");
+      if (!inputPanelEl) {
+        return;
+      }
+
+      inputPanelEl.style.height = inputPanelHeight !== null ? `${inputPanelHeight}px` : "auto";
+    }
+
+    /**
+     * Apply the current code wrap mode to CodeMirror and the toggle button.
+     */
+    function syncCodeWrapMode() {
+      const toggleWrapBtnEl = document.getElementById("toggleWrapBtn");
+      toggleWrapBtnEl.classList.toggle("is-active", isCodeWrapEnabled);
+      toggleWrapBtnEl.title = isCodeWrapEnabled ? "Disable Code Wrap" : "Enable Code Wrap";
+      toggleWrapBtnEl.setAttribute("aria-label", isCodeWrapEnabled ? "Disable Code Wrap" : "Enable Code Wrap");
+
+      if (!codeEditor) {
+        return;
+      }
+
+      codeEditor.setOption("lineWrapping", isCodeWrapEnabled);
+      codeEditor.refresh();
     }
 
     /**
@@ -1059,7 +1188,7 @@ print(" - /outputs/user_summary.csv")
       const hasHeavy = selected.some((pkgId) => PACKAGE_CATALOG.find((pkg) => pkg.id === pkgId)?.heavy);
       packageCountEl.textContent = `${selected.length} selected${hasHeavy ? " - Heavy included" : ""}`;
       selectedEl.textContent = `Selected: ${selected.length ? selected.join(", ") : "-"}`;
-      configSummaryTextEl.textContent = `Packages: ${selected.length ? selected.join(", ") : "(none)"}${hasHeavy ? " - Heavy included" : ""}`;
+      configSummaryTextEl.textContent = `Selected packages: ${selected.length ? selected.join(", ") : "(none)"}${hasHeavy ? " - Heavy included" : ""}`;
       togglePackagesBtnEl.textContent = isPackagePanelOpen ? "Close Packages" : "Edit Packages";
     }
 
@@ -1078,6 +1207,7 @@ print(" - /outputs/user_summary.csv")
       const toggleConfigBtnEl = document.getElementById("toggleConfigBtn");
       configControlsEl.hidden = !isConfigPanelOpen;
       toggleConfigBtnEl.textContent = isConfigPanelOpen ? "Hide Config ▴" : "Edit Config ▾";
+      syncConfigPanelHeight();
     }
 
     /**
@@ -1188,7 +1318,7 @@ print(" - /outputs/user_summary.csv")
     }
 
     /**
-     * Replace unsafe characters in uploaded file names.
+     * Replace unsafe characters in input file names.
      * @param {string} fileName
      * @returns {string}
      */
@@ -1231,14 +1361,14 @@ print(" - /outputs/user_summary.csv")
     }
 
     /**
-     * Render uploaded files with delete buttons.
+     * Render input files with delete buttons.
      */
-    function renderUploadedFiles() {
-      const el = document.getElementById("uploadedFiles");
+    function renderInputFiles() {
+      const el = document.getElementById("inputFiles");
       el.innerHTML = "";
 
       if (currentFiles.size === 0) {
-        el.textContent = "No files uploaded yet.";
+        el.textContent = "No input files selected yet.";
         return;
       }
 
@@ -1248,7 +1378,7 @@ print(" - /outputs/user_summary.csv")
         const li = document.createElement("li");
 
         const nameSpan = document.createElement("span");
-        nameSpan.textContent = `/uploads/${safeName} `;
+        nameSpan.textContent = `/inputs/${safeName} `;
         li.appendChild(nameSpan);
 
         const sizeSpan = document.createElement("span");
@@ -1263,10 +1393,10 @@ print(" - /outputs/user_summary.csv")
         deleteBtn.style.marginLeft = "8px";
         deleteBtn.addEventListener("click", () => {
           currentFiles.delete(safeName);
-          renderUploadedFiles();
+          renderInputFiles();
 
           const operation = createOperationCard("Delete File", { includeConsole: false });
-          appendTextListSection(operation.bodyEl, "Deleted Files", [`/uploads/${safeName}`]);
+          appendTextListSection(operation.bodyEl, "Deleted Files", [`/inputs/${safeName}`]);
         });
         li.appendChild(deleteBtn);
 
@@ -1277,17 +1407,17 @@ print(" - /outputs/user_summary.csv")
     }
 
     /**
-     * Write current uploaded files into /uploads.
+     * Write current input files into /inputs.
      * @returns {Promise<string[]>}
      */
-    async function writeUploadsToFs() {
-      ensureDir("/uploads");
-      clearDir("/uploads");
+    async function writeInputsToFs() {
+      ensureDir("/inputs");
+      clearDir("/inputs");
 
       const savedPaths = [];
       for (const [safeName, file] of currentFiles.entries()) {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const path = `/uploads/${safeName}`;
+        const path = `/inputs/${safeName}`;
         pyodide.FS.writeFile(path, bytes);
         savedPaths.push(path);
       }
@@ -1646,15 +1776,7 @@ print(" - /outputs/user_summary.csv")
      * Update the current cell display.
      */
     function updateCurrentCellInfo() {
-      const infoEl = document.getElementById("currentCellInfo");
-      const cell = getCurrentCell();
-
-      if (!cell) {
-        infoEl.textContent = "Current cell: -";
-        return;
-      }
-
-      infoEl.textContent = `Current cell: ${cell.index + 1}`;
+      return;
     }
 
     /**
@@ -1746,6 +1868,7 @@ print(" - /outputs/user_summary.csv")
         refreshEditorDecorations();
       });
 
+      syncCodeWrapMode();
       syncEditorHeight();
       updateCurrentCellInfo();
       refreshEditorDecorations();
@@ -1776,13 +1899,13 @@ print(" - /outputs/user_summary.csv")
      * @returns {Promise<void>}
      */
     async function prepareExecution() {
-      ensureDir("/uploads");
+      ensureDir("/inputs");
       ensureDir("/outputs");
-      await writeUploadsToFs();
+      await writeInputsToFs();
 
-      const uploadedPaths = Array.from(currentFiles.keys()).map((name) => `/uploads/${name}`);
-      const pyPaths = pyodide.toPy(uploadedPaths);
-      pyodide.globals.set("uploaded_paths", pyPaths);
+      const inputPaths = Array.from(currentFiles.keys()).map((name) => `/inputs/${name}`);
+      const pyPaths = pyodide.toPy(inputPaths);
+      pyodide.globals.set("input_paths", pyPaths);
       pyPaths.destroy();
     }
 
@@ -1870,10 +1993,10 @@ print(" - /outputs/user_summary.csv")
       for (const file of Array.from(files)) {
         const safeName = sanitizeFileName(file.name);
         currentFiles.set(safeName, file);
-        addedFiles.push(`/uploads/${safeName} (${file.size} bytes)`);
+        addedFiles.push(`/inputs/${safeName} (${file.size} bytes)`);
       }
 
-      renderUploadedFiles();
+      renderInputFiles();
 
       if (addedFiles.length) {
         const operation = createOperationCard("Choose Files", { includeConsole: false });
@@ -1899,11 +2022,11 @@ print(" - /outputs/user_summary.csv")
         batched: (msg) => appendConsole("[stderr] " + msg + "\n")
       });
 
-      ensureDir("/uploads");
+      ensureDir("/inputs");
       ensureDir("/outputs");
       await ensureSelectedPackagesLoaded();
       resetSharedGlobals();
-      renderUploadedFiles();
+      renderInputFiles();
       updateCurrentCellInfo();
 
       document.getElementById("runCurrentCellBtn").disabled = false;
@@ -1968,6 +2091,11 @@ print(" - /outputs/user_summary.csv")
       clearResults();
     });
 
+    document.getElementById("toggleWrapBtn").addEventListener("click", () => {
+      isCodeWrapEnabled = !isCodeWrapEnabled;
+      syncCodeWrapMode();
+    });
+
     document.getElementById("saveConfigBtn").addEventListener("click", () => {
       saveConfig();
     });
@@ -1975,7 +2103,6 @@ print(" - /outputs/user_summary.csv")
     document.getElementById("toggleConfigBtn").addEventListener("click", () => {
       isConfigPanelOpen = !isConfigPanelOpen;
       renderConfigPanel();
-      fitTopPanelToContent();
       syncEditorHeight();
     });
 
@@ -1983,7 +2110,6 @@ print(" - /outputs/user_summary.csv")
       isPackagePanelOpen = !isPackagePanelOpen;
       renderSelectedPackages();
       renderPackagePanel();
-      fitTopPanelToContent();
       syncEditorHeight();
     });
 
@@ -2045,14 +2171,18 @@ print(" - /outputs/user_summary.csv")
         setEditorColumnWidth(event.clientX);
       }
 
-      if (isResizingTopPanel) {
-        setTopPanelHeight(event.clientY);
+      if (isResizingConfigPanel) {
+        setConfigPanelHeight(event.clientY);
+      }
+
+      if (isResizingInputPanel) {
+        setInputPanelHeight(event.clientY);
       }
     });
 
     document.addEventListener("mouseup", () => {
       if (!isResizingColumns) {
-        if (!isResizingTopPanel) {
+        if (!isResizingConfigPanel && !isResizingInputPanel) {
           return;
         }
       }
@@ -2062,14 +2192,25 @@ print(" - /outputs/user_summary.csv")
         document.getElementById("columnResizer").classList.remove("is-dragging");
       }
 
-      if (isResizingTopPanel) {
-        isResizingTopPanel = false;
-        document.getElementById("topPanelResizeHandle").classList.remove("is-dragging");
+      if (isResizingConfigPanel) {
+        isResizingConfigPanel = false;
+        document.getElementById("configInputResizeHandle").classList.remove("is-dragging");
+      }
+
+      if (isResizingInputPanel) {
+        isResizingInputPanel = false;
+        document.getElementById("topStackResizeHandle").classList.remove("is-dragging");
       }
     });
 
-    document.getElementById("topPanelResizeHandle").addEventListener("mousedown", (event) => {
-      isResizingTopPanel = true;
+    document.getElementById("configInputResizeHandle").addEventListener("mousedown", (event) => {
+      isResizingConfigPanel = true;
+      event.preventDefault();
+      event.currentTarget.classList.add("is-dragging");
+    });
+
+    document.getElementById("topStackResizeHandle").addEventListener("mousedown", (event) => {
+      isResizingInputPanel = true;
       event.preventDefault();
       event.currentTarget.classList.add("is-dragging");
     });
@@ -2109,6 +2250,7 @@ print(" - /outputs/user_summary.csv")
     renderPackageOptions();
     renderConfigPanel();
     renderPackagePanel();
+    syncInputPanelHeight();
     applyConfig(getDefaultConfig());
     initCodeEditor();
 
