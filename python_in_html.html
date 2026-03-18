@@ -11,11 +11,25 @@
     crossorigin="anonymous"></script>
   <link
     rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/active-line.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css"
+    integrity="sha384-zaeBlB/vwYsDRSlFajnDd7OydJ0cWk+c2OWybl3eSUf6hW2EbhlCsQPqKr3gkznT"
+    crossorigin="anonymous" />
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"
+    integrity="sha384-ZYmwuq4n2gOcNxMSiJ6jyTj+BbIrilr7p6dlq6q5nmSWKmsH9UU4K1qqjycMkfmR"
+    crossorigin="anonymous"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"
+    integrity="sha384-Xy+2exU6lBoT4OpUOtnQb+cUpn+nlJQEHvRobWVtwz6wIsw4oNoO7xyd/l8rYgMy"
+    crossorigin="anonymous"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/active-line.min.js"
+    integrity="sha384-ZSs6LKr2GoUPDyHrN+rCQgyHL1yUyok5xMniSrgeRG7rUvA6vTmxronM1eZOfjgz"
+    crossorigin="anonymous"></script>
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"
+    integrity="sha384-LjCI3E8qhhxXZvu7+FCvqx9eZYSowFvuJ7z54KsgI/BDPGKEuysqCg/vYiKHvC4Y"
+    crossorigin="anonymous"></script>
 
   <style>
     body {
@@ -509,6 +523,18 @@ print(" - /outputs/user_summary.csv")
       operationCount = 0;
       document.getElementById("resultHistory").innerHTML =
         '<div id="resultHistoryEmpty" class="history-empty">No operations yet.</div>';
+    }
+
+    /**
+     * Clear result history and generated output files.
+     */
+    function clearResults() {
+      clearResultHistory();
+      if (pyodide) {
+        ensureDir("/outputs");
+        clearDir("/outputs");
+      }
+      setStatus("Ready.");
     }
 
     /**
@@ -1065,7 +1091,7 @@ print(" - /outputs/user_summary.csv")
     });
 
     document.getElementById("clearOutputBtn").addEventListener("click", () => {
-      clearResultHistory();
+      clearResults();
     });
 
     document.getElementById("fileInput").addEventListener("change", (event) => {
