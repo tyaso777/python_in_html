@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pyodide Data Sandbox (Cells)</title>
+
+  <script
+    src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
+    integrity="sha384-Hcsv6LxK5rH9vVB+a/+cLJZR3kIIM2Y851r6waxy+9JInvSROiD1bTMk748pYdat"
+    crossorigin="anonymous"></script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f7f7f7;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin: 0 0 10px 0;
+    }
+
+    .row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .col {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 460px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      box-sizing: border-box;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #111;
+      color: #eee;
+      padding: 12px;
+      border-radius: 6px;
+      min-height: 220px;
+      overflow: auto;
+      margin: 0;
+    }
+
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+
+    .small-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    #dropzone {
+      border: 2px dashed #999;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+      color: #555;
+      background: #fafafa;
+      margin-bottom: 12px;
+    }
+
+    #dropzone.dragover {
+      background: #eef6ff;
+      border-color: #4a90e2;
+    }
+
+    #imageOutput img {
+      max-width: 100%;
+      display: block;
+      margin-bottom: 12px;
+      border: 1px solid #ddd;
+      background: #fff;
+    }
+
+    .status {
+      color: #444;
+      font-size: 13px;
+    }
+
+    .file-list {
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+
+    #uploadedFiles ul,
+    #downloadLinks ul,
+    #cellList ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    #uploadedFiles li,
+    #downloadLinks li,
+    #cellList li {
+      margin-bottom: 8px;
+    }
+
+    .cell-item {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 8px;
+      background: #fafafa;
+    }
+
+    .cell-title {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .cell-preview {
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+      white-space: pre-wrap;
+      max-height: 48px;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 12px;
+    }
+
+    code {
+      font-family: ui-monospace, monospace;
+      background: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pyodide Data Sandbox (Cell Execution)</h1>
+
+  <div class="panel">
+    <div id="dropzone">Drop files here, or select files below.</div>
+    <input id="fileInput" type="file" multiple accept=".csv,.txt,.json" />
+    <div class="toolbar">
+      <button id="runAllBtn" disabled>Run All Cells</button>
+      <button id="refreshCellsBtn" type="button">Refresh Cell List</button>
+      <button id="resetSessionBtn" type="button" disabled>Reset Session</button>
+      <button id="clearOutputBtn" type="button">Clear Output</button>
+    </div>
+    <p class="status" id="status">Initializing Pyodide...</p>
+    <div class="file-list" id="uploadedFiles"></div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="panel">
+        <h2>Python code</h2>
+        <p class="muted">Use <code># %%</code> to split cells. Each cell can be executed independently while keeping Python state.</p>
+        <textarea id="code"># %%
+import os
+import pandas as pd
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+print("files in /uploads =", os.listdir("/uploads"))
+
+# %%
+users = pd.read_csv("/uploads/sample_user.csv")
+purchases = pd.read_csv("/uploads/sample_purchase.csv")
+
+print("\n[users]")
+print(users.head())
+
+print("\n[purchases]")
+print(purchases.head())
+
+# %%
+df = pd.merge(purchases, users, on="user_id", how="left")
+
+print("\n[joined]")
+print(df.head())
+
+user_summary = (
+    df.groupby("user_name")["amount"]
+    .sum()
+    .reset_index()
+    .sort_values("amount", ascending=False)
+)
+
+print("\n[user_summary]")
+print(user_summary)
+
+# %%
+plt.figure(figsize=(8, 4))
+plt.bar(user_summary["user_name"], user_summary["amount"])
+plt.title("Total Purchase Amount by User")
+plt.xlabel("User")
+plt.ylabel("Amount")
+plt.xticks(rotation=30)
+plt.tight_layout()
+plt.savefig("/outputs/user_total.png", dpi=140)
+
+user_summary.to_csv("/outputs/user_summary.csv", index=False)
+
+print("\nSaved:")
+print(" - /outputs/user_total.png")
+print(" - /outputs/user_summary.csv")
+</textarea>
+      </div>
+
+      <div class="panel">
+        <h2>Cells</h2>
+        <div id="cellList"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <h2>Stdout / stderr</h2>
+        <pre id="console"></pre>
+      </div>
+
+      <div class="panel">
+        <h2>Images</h2>
+        <div id="imageOutput"></div>
+      </div>
+
+      <div class="panel">
+        <h2>Downloads</h2>
+        <div id="downloadLinks"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let pyodide = null;
+    let sharedGlobals = null;
+
+    /** @type {Map<string, File>} */
+    let currentFiles = new Map();
+
+    /**
+     * Append text to the console pane.
+     * @param {string} text
+     */
+    function appendConsole(text) {
+      const consoleEl = document.getElementById("console");
+      consoleEl.textContent += text;
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    /**
+     * Set the status line.
+     * @param {string} text
+     */
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    /**
+     * Replace unsafe characters in uploaded file names.
+     * @param {string} fileName
+     * @returns {string}
+     */
+    function sanitizeFileName(fileName) {
+      return fileName.replace(/[^\w.\-]/g, "_");
+    }
+
+    /**
+     * Ensure a directory exists in Pyodide FS.
+     * @param {string} path
+     */
+    function ensureDir(path) {
+      try {
+        pyodide.FS.mkdirTree(path);
+      } catch (_error) {
+        // Ignore if the directory already exists.
+      }
+    }
+
+    /**
+     * Remove all files inside a directory if it exists.
+     * @param {string} path
+     */
+    function clearDir(path) {
+      try {
+        const names = pyodide.FS.readdir(path).filter((name) => name !== "." && name !== "..");
+        for (const name of names) {
+          const fullPath = `${path}/${name}`;
+          const stat = pyodide.FS.stat(fullPath);
+          if (pyodide.FS.isDir(stat.mode)) {
+            clearDir(fullPath);
+            pyodide.FS.rmdir(fullPath);
+          } else {
+            pyodide.FS.unlink(fullPath);
+          }
+        }
+      } catch (_error) {
+        // Ignore if the directory does not exist.
+      }
+    }
+
+    /**
+     * Render uploaded files with delete buttons.
+     */
+    function renderUploadedFiles() {
+      const el = document.getElementById("uploadedFiles");
+      el.innerHTML = "";
+
+      if (currentFiles.size === 0) {
+        el.textContent = "No files uploaded yet.";
+        return;
+      }
+
+      const list = document.createElement("ul");
+
+      for (const [safeName, file] of currentFiles.entries()) {
+        const li = document.createElement("li");
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = `/uploads/${safeName} `;
+        li.appendChild(nameSpan);
+
+        const sizeSpan = document.createElement("span");
+        sizeSpan.textContent = `(${file.size} bytes) `;
+        sizeSpan.style.color = "#666";
+        li.appendChild(sizeSpan);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.type = "button";
+        deleteBtn.className = "small-btn";
+        deleteBtn.style.marginLeft = "8px";
+        deleteBtn.addEventListener("click", () => {
+          currentFiles.delete(safeName);
+          renderUploadedFiles();
+        });
+        li.appendChild(deleteBtn);
+
+        list.appendChild(li);
+      }
+
+      el.appendChild(list);
+    }
+
+    /**
+     * Write current uploaded files into /uploads.
+     * @returns {Promise<string[]>}
+     */
+    async function writeUploadsToFs() {
+      ensureDir("/uploads");
+      clearDir("/uploads");
+
+      const savedPaths = [];
+      for (const [safeName, file] of currentFiles.entries()) {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const path = `/uploads/${safeName}`;
+        pyodide.FS.writeFile(path, bytes);
+        savedPaths.push(path);
+      }
+
+      return savedPaths;
+    }
+
+    /**
+     * Create a downloadable Blob URL from a file in Pyodide FS.
+     * @param {string} fsPath
+     * @returns {{ url: string, fileName: string }}
+     */
+    function createBlobUrlFromFs(fsPath) {
+      const data = pyodide.FS.readFile(fsPath);
+      const blob = new Blob([data]);
+      const url = URL.createObjectURL(blob);
+      const fileName = fsPath.split("/").pop() || "download.bin";
+      return { url, fileName };
+    }
+
+    /**
+     * Refresh image previews and download links from /outputs.
+     */
+    function refreshOutputs() {
+      ensureDir("/outputs");
+
+      const imageContainer = document.getElementById("imageOutput");
+      const downloadContainer = document.getElementById("downloadLinks");
+      imageContainer.innerHTML = "";
+      downloadContainer.innerHTML = "";
+
+      const fileNames = pyodide.FS.readdir("/outputs").filter((name) => name !== "." && name !== "..");
+      if (!fileNames.length) {
+        downloadContainer.textContent = "No output files.";
+        return;
+      }
+
+      const list = document.createElement("ul");
+
+      for (const name of fileNames) {
+        const fsPath = `/outputs/${name}`;
+        const { url, fileName } = createBlobUrlFromFs(fsPath);
+
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        link.textContent = fileName;
+        li.appendChild(link);
+        list.appendChild(li);
+
+        const lower = fileName.toLowerCase();
+        if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".gif")) {
+          const img = document.createElement("img");
+          img.src = url;
+          img.alt = fileName;
+          imageContainer.appendChild(img);
+        }
+      }
+
+      downloadContainer.appendChild(list);
+    }
+
+    /**
+     * Create a fresh shared namespace.
+     */
+    function resetSharedGlobals() {
+      if (sharedGlobals && typeof sharedGlobals.destroy === "function") {
+        sharedGlobals.destroy();
+      }
+      sharedGlobals = pyodide.runPython("dict()");
+      document.getElementById("resetSessionBtn").disabled = false;
+    }
+
+    /**
+     * Split the editor source into cells using '# %%'.
+     * @param {string} source
+     * @returns {string[]}
+     */
+    function splitCells(source) {
+      return source
+        .split(/^# %%.*$/m)
+        .map((cell) => cell.trim())
+        .filter((cell) => cell.length > 0);
+    }
+
+    /**
+     * Return current cells from the editor.
+     * @returns {string[]}
+     */
+    function getCells() {
+      const source = document.getElementById("code").value;
+      return splitCells(source);
+    }
+
+    /**
+     * Render the cell list with run buttons.
+     */
+    function renderCells() {
+      const container = document.getElementById("cellList");
+      container.innerHTML = "";
+
+      const cells = getCells();
+      if (cells.length === 0) {
+        container.textContent = "No cells found.";
+        return;
+      }
+
+      const list = document.createElement("ul");
+
+      cells.forEach((cellCode, index) => {
+        const li = document.createElement("li");
+        const box = document.createElement("div");
+        box.className = "cell-item";
+
+        const title = document.createElement("div");
+        title.className = "cell-title";
+        title.textContent = `Cell ${index + 1}`;
+        box.appendChild(title);
+
+        const preview = document.createElement("div");
+        preview.className = "cell-preview";
+        preview.textContent = cellCode.slice(0, 200);
+        box.appendChild(preview);
+
+        const runBtn = document.createElement("button");
+        runBtn.type = "button";
+        runBtn.className = "small-btn";
+        runBtn.textContent = `Run Cell ${index + 1}`;
+        runBtn.addEventListener("click", () => {
+          runSingleCell(index).catch((error) => {
+            appendConsole(String(error) + "\n");
+            setStatus("Failed.");
+          });
+        });
+        box.appendChild(runBtn);
+
+        li.appendChild(box);
+        list.appendChild(li);
+      });
+
+      container.appendChild(list);
+    }
+
+    /**
+     * Prepare FS state before execution.
+     * @returns {Promise<void>}
+     */
+    async function prepareExecution() {
+      ensureDir("/uploads");
+      ensureDir("/outputs");
+      await writeUploadsToFs();
+    }
+
+    /**
+     * Run one cell while preserving state.
+     * @param {number} cellIndex
+     * @returns {Promise<void>}
+     */
+    async function runSingleCell(cellIndex) {
+      if (!pyodide) {
+        return;
+      }
+
+      const cells = getCells();
+      if (cellIndex < 0 || cellIndex >= cells.length) {
+        throw new Error(`Invalid cell index: ${cellIndex}`);
+      }
+
+      setStatus(`Preparing cell ${cellIndex + 1}...`);
+      await prepareExecution();
+
+      const uploadedPaths = Array.from(currentFiles.keys()).map((name) => `/uploads/${name}`);
+      const pyPaths = pyodide.toPy(uploadedPaths);
+      pyodide.globals.set("uploaded_paths", pyPaths);
+      pyPaths.destroy();
+
+      setStatus(`Running cell ${cellIndex + 1}...`);
+      try {
+        await pyodide.runPythonAsync(cells[cellIndex], {
+          globals: sharedGlobals,
+          filename: `cell_${cellIndex + 1}.py`
+        });
+        appendConsole(`\n[done: cell ${cellIndex + 1}]\n`);
+      } catch (error) {
+        appendConsole(`\n[exception: cell ${cellIndex + 1}]\n${String(error)}\n`);
+      }
+
+      refreshOutputs();
+      setStatus("Ready.");
+    }
+
+    /**
+     * Run all cells from top to bottom.
+     * @returns {Promise<void>}
+     */
+    async function runAllCells() {
+      if (!pyodide) {
+        return;
+      }
+
+      const cells = getCells();
+      document.getElementById("console").textContent = "";
+      document.getElementById("imageOutput").innerHTML = "";
+      document.getElementById("downloadLinks").textContent = "";
+      clearDir("/outputs");
+      ensureDir("/outputs");
+
+      await prepareExecution();
+
+      const uploadedPaths = Array.from(currentFiles.keys()).map((name) => `/uploads/${name}`);
+      const pyPaths = pyodide.toPy(uploadedPaths);
+      pyodide.globals.set("uploaded_paths", pyPaths);
+      pyPaths.destroy();
+
+      for (let i = 0; i < cells.length; i += 1) {
+        setStatus(`Running cell ${i + 1} of ${cells.length}...`);
+        try {
+          await pyodide.runPythonAsync(cells[i], {
+            globals: sharedGlobals,
+            filename: `cell_${i + 1}.py`
+          });
+          appendConsole(`\n[done: cell ${i + 1}]\n`);
+        } catch (error) {
+          appendConsole(`\n[exception: cell ${i + 1}]\n${String(error)}\n`);
+          break;
+        }
+      }
+
+      refreshOutputs();
+      setStatus("Ready.");
+    }
+
+    /**
+     * Add files to the current file set.
+     * If the same sanitized file name already exists, replace it.
+     * @param {FileList | File[]} files
+     */
+    function setFiles(files) {
+      for (const file of Array.from(files)) {
+        const safeName = sanitizeFileName(file.name);
+        currentFiles.set(safeName, file);
+      }
+      renderUploadedFiles();
+    }
+
+    /**
+     * Initialize Pyodide and required packages.
+     * @returns {Promise<void>}
+     */
+    async function initPyodide() {
+      setStatus("Loading Pyodide...");
+      pyodide = await loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/"
+      });
+
+      pyodide.setStdout({
+        batched: (msg) => appendConsole(msg + "\n")
+      });
+
+      pyodide.setStderr({
+        batched: (msg) => appendConsole("[stderr] " + msg + "\n")
+      });
+
+      setStatus("Loading packages: numpy, pandas, matplotlib...");
+      await pyodide.loadPackage(["numpy", "pandas", "matplotlib"], {
+        checkIntegrity: true
+      });
+
+      ensureDir("/uploads");
+      ensureDir("/outputs");
+      resetSharedGlobals();
+      renderUploadedFiles();
+      renderCells();
+
+      document.getElementById("runAllBtn").disabled = false;
+      setStatus("Ready.");
+    }
+
+    document.getElementById("runAllBtn").addEventListener("click", () => {
+      runAllCells().catch((error) => {
+        appendConsole(String(error) + "\n");
+        setStatus("Failed.");
+      });
+    });
+
+    document.getElementById("refreshCellsBtn").addEventListener("click", () => {
+      renderCells();
+    });
+
+    document.getElementById("resetSessionBtn").addEventListener("click", () => {
+      resetSharedGlobals();
+      appendConsole("\n[session reset]\n");
+      setStatus("Session reset. Ready.");
+    });
+
+    document.getElementById("clearOutputBtn").addEventListener("click", () => {
+      document.getElementById("console").textContent = "";
+      document.getElementById("imageOutput").innerHTML = "";
+      document.getElementById("downloadLinks").innerHTML = "";
+    });
+
+    document.getElementById("fileInput").addEventListener("change", (event) => {
+      setFiles(event.target.files || []);
+      event.target.value = "";
+    });
+
+    document.getElementById("code").addEventListener("input", () => {
+      renderCells();
+    });
+
+    const dropzone = document.getElementById("dropzone");
+
+    dropzone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+
+    dropzone.addEventListener("dragleave", () => {
+      dropzone.classList.remove("dragover");
+    });
+
+    dropzone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      dropzone.classList.remove("dragover");
+      if (event.dataTransfer?.files) {
+        setFiles(event.dataTransfer.files);
+      }
+    });
+
+    initPyodide().catch((error) => {
+      appendConsole(String(error) + "\n");
+      setStatus("Initialization failed.");
+    });
+  </script>
+</body>
+</html>

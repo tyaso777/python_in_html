@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pyodide Data Sandbox (Current Cell)</title>
+
+  <script
+    src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
+    integrity="sha384-Hcsv6LxK5rH9vVB+a/+cLJZR3kIIM2Y851r6waxy+9JInvSROiD1bTMk748pYdat"
+    crossorigin="anonymous"></script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f7f7f7;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+
+    h2 {
+      font-size: 16px;
+      margin: 0 0 10px 0;
+    }
+
+    .row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .col {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 520px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.45;
+      box-sizing: border-box;
+      tab-size: 4;
+    }
+
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #111;
+      color: #eee;
+      padding: 12px;
+      border-radius: 6px;
+      min-height: 220px;
+      overflow: auto;
+      margin: 0;
+    }
+
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .file-input-label {
+      display: inline-block;
+      padding: 8px 14px;
+      border: 1px solid #999;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      color: #222;
+    }
+
+    .small-btn {
+      padding: 2px 8px;
+      font-size: 12px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .muted {
+      color: #666;
+      font-size: 12px;
+    }
+
+    .status {
+      color: #444;
+      font-size: 13px;
+    }
+
+    .history {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .history-empty {
+      color: #666;
+      font-size: 13px;
+    }
+
+    .result-card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 12px;
+      background: #fafafa;
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .result-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .result-time {
+      font-size: 12px;
+      color: #666;
+      white-space: nowrap;
+    }
+
+    .result-section + .result-section {
+      margin-top: 12px;
+    }
+
+    .result-section h3 {
+      font-size: 13px;
+      margin: 0 0 8px 0;
+      color: #333;
+    }
+
+    .result-console {
+      min-height: 0;
+    }
+
+    .result-images {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .result-images img {
+      max-width: 100%;
+      display: block;
+      border: 1px solid #ddd;
+      background: #fff;
+    }
+
+    #uploadedFiles ul,
+    .download-list,
+    .file-list {
+      margin: 8px 0 0;
+      padding-left: 20px;
+    }
+
+    #uploadedFiles li,
+    .download-list li,
+    .file-list li {
+      margin-bottom: 8px;
+    }
+
+    code {
+      font-family: ui-monospace, monospace;
+      background: #f0f0f0;
+      padding: 1px 4px;
+      border-radius: 4px;
+    }
+
+    .current-cell-info {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+  <h1>Pyodide Data Sandbox (Current Cell)</h1>
+
+  <div class="panel">
+    <p class="muted">Select files to upload.</p>
+    <label for="fileInput" class="file-input-label">Choose Files</label>
+    <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json" />
+
+    <div class="toolbar">
+      <button id="runCurrentCellBtn" disabled>Run Current Cell</button>
+      <button id="runAllBtn" disabled>Run All Cells</button>
+      <button id="resetSessionBtn" type="button" disabled>Reset Session</button>
+      <button id="clearOutputBtn" type="button">Clear Output</button>
+    </div>
+
+    <p class="status" id="status">Initializing Pyodide...</p>
+    <div id="currentCellInfo" class="current-cell-info">Current cell: -</div>
+    <div id="uploadedFiles"></div>
+  </div>
+
+  <div class="row">
+    <div class="col">
+      <div class="panel">
+        <h2>Python code</h2>
+        <p class="muted">Use <code># %%</code> to split cells. Run Current Cell executes the cell containing the cursor.</p>
+        <textarea id="code"># %%
+import os
+import pandas as pd
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+print("files in /uploads =", os.listdir("/uploads"))
+
+# %%
+users = pd.read_csv("/uploads/sample_user.csv")
+purchases = pd.read_csv("/uploads/sample_purchase.csv")
+
+print("\n[users]")
+print(users.head())
+
+print("\n[purchases]")
+print(purchases.head())
+
+# %%
+df = pd.merge(purchases, users, on="user_id", how="left")
+
+print("\n[joined]")
+print(df.head())
+
+user_summary = (
+    df.groupby("user_name")["amount"]
+    .sum()
+    .reset_index()
+    .sort_values("amount", ascending=False)
+)
+
+print("\n[user_summary]")
+print(user_summary)
+
+# %%
+plt.figure(figsize=(8, 4))
+plt.bar(user_summary["user_name"], user_summary["amount"])
+plt.title("Total Purchase Amount by User")
+plt.xlabel("User")
+plt.ylabel("Amount")
+plt.xticks(rotation=30)
+plt.tight_layout()
+plt.savefig("/outputs/user_total.png", dpi=140)
+
+user_summary.to_csv("/outputs/user_summary.csv", index=False)
+
+print("\nSaved:")
+print(" - /outputs/user_total.png")
+print(" - /outputs/user_summary.csv")
+</textarea>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="panel">
+        <h2>Operation Results</h2>
+        <div id="resultHistory" class="history">
+          <div id="resultHistoryEmpty" class="history-empty">No operations yet.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let pyodide = null;
+    let sharedGlobals = null;
+    let activeOperation = null;
+    let operationCount = 0;
+    let createdObjectUrls = [];
+
+    /** @type {Map<string, File>} */
+    let currentFiles = new Map();
+
+    /**
+     * Append text to the console pane.
+     * @param {string} text
+     */
+    function appendConsole(text) {
+      if (!activeOperation) {
+        return;
+      }
+
+      activeOperation.consoleEl.textContent += text;
+      activeOperation.consoleEl.scrollTop = activeOperation.consoleEl.scrollHeight;
+    }
+
+    /**
+     * Set the status line.
+     * @param {string} text
+     */
+    function setStatus(text) {
+      document.getElementById("status").textContent = text;
+    }
+
+    /**
+     * Replace unsafe characters in uploaded file names.
+     * @param {string} fileName
+     * @returns {string}
+     */
+    function sanitizeFileName(fileName) {
+      return fileName.replace(/[^\w.\-]/g, "_");
+    }
+
+    /**
+     * Ensure a directory exists in Pyodide FS.
+     * @param {string} path
+     */
+    function ensureDir(path) {
+      try {
+        pyodide.FS.mkdirTree(path);
+      } catch (_error) {
+        // Ignore if the directory already exists.
+      }
+    }
+
+    /**
+     * Remove all files inside a directory if it exists.
+     * @param {string} path
+     */
+    function clearDir(path) {
+      try {
+        const names = pyodide.FS.readdir(path).filter((name) => name !== "." && name !== "..");
+        for (const name of names) {
+          const fullPath = `${path}/${name}`;
+          const stat = pyodide.FS.stat(fullPath);
+          if (pyodide.FS.isDir(stat.mode)) {
+            clearDir(fullPath);
+            pyodide.FS.rmdir(fullPath);
+          } else {
+            pyodide.FS.unlink(fullPath);
+          }
+        }
+      } catch (_error) {
+        // Ignore if the directory does not exist.
+      }
+    }
+
+    /**
+     * Render uploaded files with delete buttons.
+     */
+    function renderUploadedFiles() {
+      const el = document.getElementById("uploadedFiles");
+      el.innerHTML = "";
+
+      if (currentFiles.size === 0) {
+        el.textContent = "No files uploaded yet.";
+        return;
+      }
+
+      const list = document.createElement("ul");
+
+      for (const [safeName, file] of currentFiles.entries()) {
+        const li = document.createElement("li");
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = `/uploads/${safeName} `;
+        li.appendChild(nameSpan);
+
+        const sizeSpan = document.createElement("span");
+        sizeSpan.textContent = `(${file.size} bytes) `;
+        sizeSpan.style.color = "#666";
+        li.appendChild(sizeSpan);
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.textContent = "Delete";
+        deleteBtn.type = "button";
+        deleteBtn.className = "small-btn";
+        deleteBtn.style.marginLeft = "8px";
+        deleteBtn.addEventListener("click", () => {
+          currentFiles.delete(safeName);
+          renderUploadedFiles();
+
+          const operation = createOperationCard("Delete File", { includeConsole: false });
+          appendTextListSection(operation.bodyEl, "Deleted Files", [`/uploads/${safeName}`]);
+        });
+        li.appendChild(deleteBtn);
+
+        list.appendChild(li);
+      }
+
+      el.appendChild(list);
+    }
+
+    /**
+     * Write current uploaded files into /uploads.
+     * @returns {Promise<string[]>}
+     */
+    async function writeUploadsToFs() {
+      ensureDir("/uploads");
+      clearDir("/uploads");
+
+      const savedPaths = [];
+      for (const [safeName, file] of currentFiles.entries()) {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const path = `/uploads/${safeName}`;
+        pyodide.FS.writeFile(path, bytes);
+        savedPaths.push(path);
+      }
+
+      return savedPaths;
+    }
+
+    /**
+     * Create a downloadable Blob URL from a file in Pyodide FS.
+     * @param {string} fsPath
+     * @returns {{ url: string, fileName: string }}
+     */
+    function createBlobUrlFromFs(fsPath) {
+      const data = pyodide.FS.readFile(fsPath);
+      const blob = new Blob([data]);
+      const url = URL.createObjectURL(blob);
+      createdObjectUrls.push(url);
+      const fileName = fsPath.split("/").pop() || "download.bin";
+      return { url, fileName };
+    }
+
+    /**
+     * Revoke all saved object URLs.
+     */
+    function revokeObjectUrls() {
+      for (const url of createdObjectUrls) {
+        URL.revokeObjectURL(url);
+      }
+      createdObjectUrls = [];
+    }
+
+    /**
+     * Clear the operation result history.
+     */
+    function clearResultHistory() {
+      revokeObjectUrls();
+      activeOperation = null;
+      operationCount = 0;
+      document.getElementById("resultHistory").innerHTML =
+        '<div id="resultHistoryEmpty" class="history-empty">No operations yet.</div>';
+    }
+
+    /**
+     * Create a new operation card.
+     * @param {string} title
+     * @param {{ includeConsole?: boolean }} [options]
+     * @returns {{ cardEl: HTMLDivElement, bodyEl: HTMLDivElement, consoleEl: HTMLPreElement }}
+     */
+    function createOperationCard(title, options = {}) {
+      const { includeConsole = true } = options;
+      const historyEl = document.getElementById("resultHistory");
+      const emptyEl = document.getElementById("resultHistoryEmpty");
+      if (emptyEl) {
+        emptyEl.remove();
+      }
+
+      operationCount += 1;
+
+      const cardEl = document.createElement("div");
+      cardEl.className = "result-card";
+
+      const headerEl = document.createElement("div");
+      headerEl.className = "result-header";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "result-title";
+      titleEl.textContent = `${operationCount}. ${title}`;
+
+      const timeEl = document.createElement("div");
+      timeEl.className = "result-time";
+      timeEl.textContent = new Date().toLocaleString("en-US");
+
+      const bodyEl = document.createElement("div");
+      let consoleEl = null;
+
+      if (includeConsole) {
+        const consoleSectionEl = document.createElement("section");
+        consoleSectionEl.className = "result-section";
+
+        const consoleTitleEl = document.createElement("h3");
+        consoleTitleEl.textContent = "Stdout / stderr";
+
+        consoleEl = document.createElement("pre");
+        consoleEl.className = "result-console";
+
+        consoleSectionEl.appendChild(consoleTitleEl);
+        consoleSectionEl.appendChild(consoleEl);
+        bodyEl.appendChild(consoleSectionEl);
+      }
+
+      headerEl.appendChild(titleEl);
+      headerEl.appendChild(timeEl);
+      cardEl.appendChild(headerEl);
+      cardEl.appendChild(bodyEl);
+      historyEl.prepend(cardEl);
+
+      return { cardEl, bodyEl, consoleEl };
+    }
+
+    /**
+     * Append a list section to a result card.
+     * @param {HTMLElement} bodyEl
+     * @param {string} title
+     * @param {string[]} items
+     */
+    function appendTextListSection(bodyEl, title, items) {
+      if (!items.length) {
+        return;
+      }
+
+      const sectionEl = document.createElement("section");
+      sectionEl.className = "result-section";
+
+      const headingEl = document.createElement("h3");
+      headingEl.textContent = title;
+
+      const listEl = document.createElement("ul");
+      listEl.className = "file-list";
+
+      for (const item of items) {
+        const li = document.createElement("li");
+        li.textContent = item;
+        listEl.appendChild(li);
+      }
+
+      sectionEl.appendChild(headingEl);
+      sectionEl.appendChild(listEl);
+      bodyEl.appendChild(sectionEl);
+    }
+
+    /**
+     * Get a snapshot of files in /outputs.
+     * @returns {Map<string, Date>}
+     */
+    function getOutputSnapshot() {
+      ensureDir("/outputs");
+      const snapshot = new Map();
+      const fileNames = pyodide.FS.readdir("/outputs").filter((name) => name !== "." && name !== "..");
+
+      for (const name of fileNames) {
+        const fsPath = `/outputs/${name}`;
+        const stat = pyodide.FS.stat(fsPath);
+        snapshot.set(name, stat.mtime);
+      }
+
+      return snapshot;
+    }
+
+    /**
+     * Append image previews and download links from changed /outputs files.
+     * @param {Map<string, Date>} beforeSnapshot
+     */
+    function appendOutputsToActiveOperation(beforeSnapshot) {
+      if (!activeOperation) {
+        return;
+      }
+
+      const afterSnapshot = getOutputSnapshot();
+      const changedNames = [];
+
+      for (const [name, mtime] of afterSnapshot.entries()) {
+        const previousMtime = beforeSnapshot.get(name);
+        if (!previousMtime || mtime > previousMtime) {
+          changedNames.push(name);
+        }
+      }
+
+      if (!changedNames.length) {
+        return;
+      }
+
+      let imageSectionEl = null;
+      let imageContainerEl = null;
+
+      const downloadSectionEl = document.createElement("section");
+      downloadSectionEl.className = "result-section";
+
+      const downloadHeadingEl = document.createElement("h3");
+      downloadHeadingEl.textContent = "Downloads";
+
+      const downloadListEl = document.createElement("ul");
+      downloadListEl.className = "download-list";
+
+      for (const name of changedNames) {
+        const fsPath = `/outputs/${name}`;
+        const { url, fileName } = createBlobUrlFromFs(fsPath);
+
+        const li = document.createElement("li");
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = fileName;
+        link.textContent = fileName;
+        li.appendChild(link);
+        downloadListEl.appendChild(li);
+
+        const lower = fileName.toLowerCase();
+        if (lower.endsWith(".png") || lower.endsWith(".jpg") || lower.endsWith(".jpeg") || lower.endsWith(".gif")) {
+          if (!imageSectionEl) {
+            imageSectionEl = document.createElement("section");
+            imageSectionEl.className = "result-section";
+
+            const imageHeadingEl = document.createElement("h3");
+            imageHeadingEl.textContent = "Images";
+
+            imageContainerEl = document.createElement("div");
+            imageContainerEl.className = "result-images";
+
+            imageSectionEl.appendChild(imageHeadingEl);
+            imageSectionEl.appendChild(imageContainerEl);
+          }
+
+          const img = document.createElement("img");
+          img.src = url;
+          img.alt = fileName;
+          imageContainerEl.appendChild(img);
+        }
+      }
+
+      if (imageSectionEl) {
+        activeOperation.bodyEl.appendChild(imageSectionEl);
+      }
+
+      downloadSectionEl.appendChild(downloadHeadingEl);
+      downloadSectionEl.appendChild(downloadListEl);
+      activeOperation.bodyEl.appendChild(downloadSectionEl);
+    }
+
+    /**
+     * Create a fresh shared namespace.
+     */
+    function resetSharedGlobals() {
+      if (sharedGlobals && typeof sharedGlobals.destroy === "function") {
+        sharedGlobals.destroy();
+      }
+      sharedGlobals = pyodide.runPython("dict()");
+      document.getElementById("resetSessionBtn").disabled = false;
+    }
+
+    /**
+     * Split source into cells with character ranges.
+     * Lines beginning with '# %%' start a new cell.
+     * @param {string} source
+     * @returns {{ code: string, start: number, end: number, index: number }[]}
+     */
+    function splitCellsWithRanges(source) {
+      const regex = /^# %%.*$/gm;
+      const matches = [];
+      let match;
+
+      while ((match = regex.exec(source)) !== null) {
+        matches.push({
+          lineStart: match.index,
+          lineEnd: regex.lastIndex
+        });
+      }
+
+      if (matches.length === 0) {
+        const trimmed = source.trim();
+        return trimmed.length > 0
+          ? [{ code: trimmed, start: 0, end: source.length, index: 0 }]
+          : [];
+      }
+
+      const cells = [];
+
+      for (let i = 0; i < matches.length; i += 1) {
+        const start = matches[i].lineEnd;
+        const end = i + 1 < matches.length ? matches[i + 1].lineStart : source.length;
+        const raw = source.slice(start, end);
+        const trimmed = raw.trim();
+
+        if (trimmed.length > 0) {
+          cells.push({
+            code: trimmed,
+            start,
+            end,
+            index: cells.length
+          });
+        }
+      }
+
+      return cells;
+    }
+
+    /**
+     * Get all cells from the editor.
+     * @returns {{ code: string, start: number, end: number, index: number }[]}
+     */
+    function getCells() {
+      const source = document.getElementById("code").value;
+      return splitCellsWithRanges(source);
+    }
+
+    /**
+     * Get the current cell based on the editor cursor position.
+     * @returns {{ code: string, start: number, end: number, index: number } | null}
+     */
+    function getCurrentCell() {
+      const editor = document.getElementById("code");
+      const cursorPos = editor.selectionStart;
+      const cells = getCells();
+
+      for (const cell of cells) {
+        if (cursorPos >= cell.start && cursorPos <= cell.end) {
+          return cell;
+        }
+      }
+
+      return cells.length > 0 ? cells[0] : null;
+    }
+
+    /**
+     * Update the current cell display.
+     */
+    function updateCurrentCellInfo() {
+      const infoEl = document.getElementById("currentCellInfo");
+      const cell = getCurrentCell();
+
+      if (!cell) {
+        infoEl.textContent = "Current cell: -";
+        return;
+      }
+
+      infoEl.textContent = `Current cell: ${cell.index + 1}`;
+    }
+
+    /**
+     * Prepare the file system before execution.
+     * @returns {Promise<void>}
+     */
+    async function prepareExecution() {
+      ensureDir("/uploads");
+      ensureDir("/outputs");
+      await writeUploadsToFs();
+
+      const uploadedPaths = Array.from(currentFiles.keys()).map((name) => `/uploads/${name}`);
+      const pyPaths = pyodide.toPy(uploadedPaths);
+      pyodide.globals.set("uploaded_paths", pyPaths);
+      pyPaths.destroy();
+    }
+
+    /**
+     * Run one cell and append its result as one operation card.
+     * @param {{ code: string, start: number, end: number, index: number }} cell
+     * @returns {Promise<void>}
+     */
+    async function executeCellOperation(cell) {
+      activeOperation = createOperationCard(`Run Current Cell ${cell.index + 1}`);
+      setStatus(`Preparing current cell ${cell.index + 1}...`);
+      await prepareExecution();
+      const outputSnapshotBefore = getOutputSnapshot();
+
+      setStatus(`Running current cell ${cell.index + 1}...`);
+      try {
+        await pyodide.runPythonAsync(cell.code, {
+          globals: sharedGlobals,
+          filename: `cell_${cell.index + 1}.py`
+        });
+        appendConsole(`\n[done: current cell ${cell.index + 1}]\n`);
+        appendOutputsToActiveOperation(outputSnapshotBefore);
+        return true;
+      } catch (error) {
+        appendConsole(`\n[exception: current cell ${cell.index + 1}]\n${String(error)}\n`);
+        appendOutputsToActiveOperation(outputSnapshotBefore);
+        return false;
+      } finally {
+        activeOperation = null;
+      }
+    }
+
+    /**
+     * Run the current cell based on cursor position.
+     * @returns {Promise<void>}
+     */
+    async function runCurrentCell() {
+      if (!pyodide) {
+        return;
+      }
+
+      const currentCell = getCurrentCell();
+      if (!currentCell) {
+        throw new Error("No executable cell found.");
+      }
+
+      await executeCellOperation(currentCell);
+      setStatus("Ready.");
+    }
+
+    /**
+     * Run all cells from top to bottom.
+     * @returns {Promise<void>}
+     */
+    async function runAllCells() {
+      if (!pyodide) {
+        return;
+      }
+
+      const cells = getCells();
+      if (!cells.length) {
+        throw new Error("No executable cells found.");
+      }
+
+      for (let i = 0; i < cells.length; i += 1) {
+        setStatus(`Running cell ${i + 1} of ${cells.length}...`);
+        const success = await executeCellOperation(cells[i]);
+        if (!success) {
+          break;
+        }
+      }
+
+      setStatus("Ready.");
+    }
+
+    /**
+     * Add files to the current file set.
+     * If the same sanitized file name already exists, replace it.
+     * @param {FileList | File[]} files
+     */
+    function setFiles(files) {
+      const addedFiles = [];
+
+      for (const file of Array.from(files)) {
+        const safeName = sanitizeFileName(file.name);
+        currentFiles.set(safeName, file);
+        addedFiles.push(`/uploads/${safeName} (${file.size} bytes)`);
+      }
+
+      renderUploadedFiles();
+
+      if (addedFiles.length) {
+        const operation = createOperationCard("Choose Files", { includeConsole: false });
+        appendTextListSection(operation.bodyEl, "Selected Files", addedFiles);
+      }
+    }
+
+    /**
+     * Initialize Pyodide and required packages.
+     * @returns {Promise<void>}
+     */
+    async function initPyodide() {
+      setStatus("Loading Pyodide...");
+      pyodide = await loadPyodide({
+        indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/"
+      });
+
+      pyodide.setStdout({
+        batched: (msg) => appendConsole(msg + "\n")
+      });
+
+      pyodide.setStderr({
+        batched: (msg) => appendConsole("[stderr] " + msg + "\n")
+      });
+
+      setStatus("Loading packages: numpy, pandas, matplotlib...");
+      await pyodide.loadPackage(["numpy", "pandas", "matplotlib"], {
+        checkIntegrity: true
+      });
+
+      ensureDir("/uploads");
+      ensureDir("/outputs");
+      resetSharedGlobals();
+      renderUploadedFiles();
+      updateCurrentCellInfo();
+
+      document.getElementById("runCurrentCellBtn").disabled = false;
+      document.getElementById("runAllBtn").disabled = false;
+
+      setStatus("Ready.");
+    }
+
+    document.getElementById("runCurrentCellBtn").addEventListener("click", () => {
+      runCurrentCell().catch((error) => {
+        appendConsole(String(error) + "\n");
+        setStatus("Failed.");
+      });
+    });
+
+    document.getElementById("runAllBtn").addEventListener("click", () => {
+      runAllCells().catch((error) => {
+        appendConsole(String(error) + "\n");
+        setStatus("Failed.");
+      });
+    });
+
+    document.getElementById("resetSessionBtn").addEventListener("click", () => {
+      resetSharedGlobals();
+      const operation = createOperationCard("Reset Session");
+      operation.consoleEl.textContent = "[session reset]\n";
+      setStatus("Session reset. Ready.");
+    });
+
+    document.getElementById("clearOutputBtn").addEventListener("click", () => {
+      clearResultHistory();
+    });
+
+    document.getElementById("fileInput").addEventListener("change", (event) => {
+      setFiles(event.target.files || []);
+      event.target.value = "";
+    });
+
+    const editor = document.getElementById("code");
+
+    editor.addEventListener("click", () => {
+      updateCurrentCellInfo();
+    });
+
+    editor.addEventListener("keyup", () => {
+      updateCurrentCellInfo();
+    });
+
+    editor.addEventListener("select", () => {
+      updateCurrentCellInfo();
+    });
+
+    initPyodide().catch((error) => {
+      const operation = createOperationCard("Initialization Failed");
+      operation.consoleEl.textContent = String(error) + "\n";
+      setStatus("Initialization failed.");
+    });
+  </script>
+</body>
+</html>

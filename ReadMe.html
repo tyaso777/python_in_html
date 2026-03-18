@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pyodide Data Sandbox - User Guide</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 24px;
+      background: #f7f7f7;
+      color: #222;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      background: #ffffff;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 24px 28px;
+      box-sizing: border-box;
+    }
+
+    h1, h2, h3 {
+      color: #111;
+      margin-top: 1.4em;
+      margin-bottom: 0.55em;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 2rem;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    h3 {
+      font-size: 1.05rem;
+    }
+
+    p {
+      margin: 0.6em 0 1em;
+    }
+
+    ul, ol {
+      padding-left: 1.4em;
+      margin: 0.4em 0 1em;
+    }
+
+    li {
+      margin-bottom: 0.35em;
+    }
+
+    .section {
+      margin-bottom: 30px;
+    }
+
+    .note {
+      background: #eef6ff;
+      border: 1px solid #c9def7;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+
+    .warn {
+      background: #fff7e8;
+      border: 1px solid #f0d49a;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #f2f2f2;
+      color: #b42318;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.95em;
+    }
+
+    pre {
+      background: #f5f5f5;
+      color: #222;
+      padding: 14px 16px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      overflow-x: auto;
+      line-height: 1.5;
+      margin: 0.8em 0 1.1em;
+    }
+
+    pre code {
+      background: transparent;
+      color: #222;
+      padding: 0;
+      border-radius: 0;
+      font-size: 0.95em;
+    }
+
+    .small {
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    .path {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      background: #f5f5f5;
+      border: 1px solid #ddd;
+      padding: 10px 12px;
+      border-radius: 8px;
+      display: inline-block;
+      margin: 8px 0;
+    }
+
+    .table-like {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px;
+    }
+
+    .table-like th,
+    .table-like td {
+      border: 1px solid #ddd;
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .table-like th {
+      background: #f3f3f3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Pyodide Data Sandbox - User Guide</h1>
+
+    <div class="section">
+      <h2>1. Overview</h2>
+      <p>
+        This tool runs Python directly in your browser using Pyodide.
+        You can upload data files, write Python code with
+        <code>pandas</code>, <code>numpy</code>, and <code>matplotlib</code>,
+        and then inspect the output, generated images, and downloadable result files.
+      </p>
+      <p>Main features:</p>
+      <ul>
+        <li>No local Python installation required</li>
+        <li>Supports CSV, JSON, and TXT files</li>
+        <li>Editable Python code area</li>
+        <li>Standard output and error display</li>
+        <li>Image preview for generated plots</li>
+        <li>Download links for generated output files</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>2. Basic Workflow</h2>
+      <ol>
+        <li>Upload one or more files</li>
+        <li>Write or edit Python code</li>
+        <li>Click <code>Run Python</code></li>
+        <li>Check output, images, and downloadable files</li>
+      </ol>
+    </div>
+
+    <div class="section">
+      <h2>3. Uploading Files</h2>
+      <p>
+        Files can be uploaded either by drag and drop or by using the file selection button.
+      </p>
+      <p>
+        Uploaded files are stored in the browser-side virtual file system and can be accessed from Python under:
+      </p>
+      <div class="path">/uploads/your_file_name</div>
+
+      <p>Example:</p>
+      <pre><code>df = pd.read_csv("/uploads/sample_user.csv")</code></pre>
+
+      <div class="warn">
+        File names must match exactly.
+        For example, <code>sample_user.csv</code> and <code>sample-user.csv</code> are different names.
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>4. Writing Python Code</h2>
+      <p>
+        You can freely edit the Python code in the editor area.
+        The environment supports common data-processing tasks with:
+      </p>
+      <ul>
+        <li><code>pandas</code></li>
+        <li><code>numpy</code></li>
+        <li><code>matplotlib</code></li>
+      </ul>
+
+      <p>Simple example:</p>
+      <pre><code>import pandas as pd
+
+df = pd.read_csv("/uploads/sample_user.csv")
+print(df.head())</code></pre>
+    </div>
+
+    <div class="section">
+      <h2>5. Standard Output and Errors</h2>
+      <p>
+        Anything printed with <code>print()</code> appears in the
+        <strong>Stdout / stderr</strong> area.
+      </p>
+      <p>
+        If an error occurs, the traceback is also shown there.
+      </p>
+
+      <p>Example:</p>
+      <pre><code>print("Hello")
+print(df.shape)</code></pre>
+    </div>
+
+    <div class="section">
+      <h2>6. Saving Images</h2>
+      <p>
+        To show a plot in the <strong>Images</strong> area, save it under <code>/outputs/</code>.
+      </p>
+
+      <pre><code>import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+plt.plot([1, 2, 3], [10, 20, 15])
+plt.title("Sample Plot")
+plt.savefig("/outputs/plot.png")</code></pre>
+
+      <p>
+        Saved image files such as <code>.png</code> are automatically shown in the UI.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>7. Saving Downloadable Files</h2>
+      <p>
+        Files written under <code>/outputs/</code> appear in the <strong>Downloads</strong> area.
+      </p>
+
+      <pre><code>df.to_csv("/outputs/result.csv", index=False)</code></pre>
+
+      <p>
+        This can be used for processed CSV files, JSON files, text files, and plot images.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>8. Sample Use Case: Join Two CSV Files and Draw a Chart</h2>
+      <p>Upload the following two files:</p>
+      <ul>
+        <li><code>sample_user.csv</code></li>
+        <li><code>sample_purchase.csv</code></li>
+      </ul>
+
+      <p>Example code:</p>
+      <pre><code>import pandas as pd
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+users = pd.read_csv("/uploads/sample_user.csv")
+purchases = pd.read_csv("/uploads/sample_purchase.csv")
+
+df = pd.merge(purchases, users, on="user_id", how="left")
+
+summary = (
+    df.groupby("user_name")["amount"]
+    .sum()
+    .reset_index()
+    .sort_values("amount", ascending=False)
+)
+
+print(summary)
+
+plt.figure(figsize=(8, 4))
+plt.bar(summary["user_name"], summary["amount"])
+plt.title("Total Purchase Amount by User")
+plt.xlabel("User")
+plt.ylabel("Amount")
+plt.xticks(rotation=30)
+plt.tight_layout()
+plt.savefig("/outputs/user_total.png", dpi=140)
+
+summary.to_csv("/outputs/user_summary.csv", index=False)</code></pre>
+    </div>
+
+    <div class="section">
+      <h2>9. How to Check Uploaded File Names</h2>
+      <p>
+        If you are unsure about the uploaded file names, run:
+      </p>
+      <pre><code>import os
+print(os.listdir("/uploads"))</code></pre>
+      <p>
+        This is useful when you get a <code>FileNotFoundError</code>.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>10. Supported File Types</h2>
+      <table class="table-like">
+        <thead>
+          <tr>
+            <th>File type</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CSV</td>
+            <td>Supported</td>
+          </tr>
+          <tr>
+            <td>JSON</td>
+            <td>Supported</td>
+          </tr>
+          <tr>
+            <td>TXT</td>
+            <td>Supported</td>
+          </tr>
+          <tr>
+            <td>Excel (.xlsx, .xls)</td>
+            <td>Not supported in this version</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>11. Notes and Limitations</h2>
+      <div class="note">
+        All processing happens in the browser.
+        Uploaded files are not automatically sent to a server by this tool.
+      </div>
+      <ul>
+        <li>Large files may be slow because processing uses browser memory</li>
+        <li>Uploaded files disappear when the page is reloaded</li>
+        <li>Only files under <code>/uploads/</code> can be read</li>
+        <li>Only files under <code>/outputs/</code> appear as downloadable results</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>12. Troubleshooting</h2>
+
+      <h3>FileNotFoundError</h3>
+      <p>
+        The file path in Python does not match the uploaded file name.
+      </p>
+      <pre><code>import os
+print(os.listdir("/uploads"))</code></pre>
+
+      <h3>No image appears</h3>
+      <p>
+        Make sure the plot is saved under <code>/outputs/</code>.
+      </p>
+      <pre><code>plt.savefig("/outputs/plot.png")</code></pre>
+
+      <h3>No downloadable file appears</h3>
+      <p>
+        Make sure the file is written under <code>/outputs/</code>.
+      </p>
+    </div>
+
+    <div class="section">
+      <h2>13. Minimal Template</h2>
+      <p>
+        If you only need a simple CSV read and export workflow, start with this:
+      </p>
+      <pre><code>import pandas as pd
+
+df = pd.read_csv("/uploads/your_file.csv")
+print(df.head())
+
+df.to_csv("/outputs/result.csv", index=False)</code></pre>
+    </div>
+
+    <div class="section">
+      <h2>14. Recommended Sample Files</h2>
+      <p>
+        For practice, use the following sample files:
+      </p>
+      <ul>
+        <li><code>sample_user.csv</code></li>
+        <li><code>sample_purchase.csv</code></li>
+      </ul>
+      <p class="small">
+        These files can be used together with the example code in Section 8.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
