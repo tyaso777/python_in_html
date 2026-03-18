@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pyodide Data Sandbox (Current Cell)</title>
+  <title>Python in HTML</title>
 
   <script
     src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
@@ -605,7 +605,7 @@
   </style>
 </head>
 <body>
-  <h1>Pyodide Data Sandbox (Current Cell)</h1>
+  <h1>Python in HTML</h1>
 
   <div class="top-stack">
     <div id="configPanel" class="panel resizable-subpanel">
@@ -1692,9 +1692,10 @@ print(" - /outputs/user_summary.csv")
      * Split source into cells with character ranges.
      * Lines beginning with '# %%' start a new cell.
      * @param {string} source
+     * @param {boolean} includeEmpty
      * @returns {{ code: string, start: number, end: number, index: number }[]}
      */
-    function splitCellsWithRanges(source) {
+    function splitCellsWithRanges(source, includeEmpty = false) {
       const regex = /^# %%.*$/gm;
       const matches = [];
       let match;
@@ -1727,7 +1728,7 @@ print(" - /outputs/user_summary.csv")
         const raw = source.slice(start, end);
         const trimmed = raw.trim();
 
-        if (trimmed.length > 0) {
+        if (includeEmpty || trimmed.length > 0) {
           cells.push({
             code: trimmed,
             start,
@@ -1750,6 +1751,15 @@ print(" - /outputs/user_summary.csv")
     }
 
     /**
+     * Get all visible cells from the editor, including empty cells.
+     * @returns {{ code: string, start: number, end: number, index: number }[]}
+     */
+    function getVisibleCells() {
+      const source = getEditorSource();
+      return splitCellsWithRanges(source, true);
+    }
+
+    /**
      * Get the current cell based on the editor cursor position.
      * @returns {{ code: string, start: number, end: number, index: number } | null}
      */
@@ -1769,7 +1779,84 @@ print(" - /outputs/user_summary.csv")
         }
       }
 
-      return cells.length > 0 ? cells[0] : null;
+      return cells.length > 0 ? cells[cells.length - 1] : null;
+    }
+
+    /**
+     * Get the visible cell based on the editor cursor position.
+     * Empty cells are included for navigation.
+     * @returns {{ code: string, start: number, end: number, index: number } | null}
+     */
+    function getCurrentVisibleCell() {
+      const cursorPos = getEditorCursorIndex();
+      const cells = getVisibleCells();
+
+      for (const cell of cells) {
+        if (cursorPos >= cell.start && cursorPos <= cell.end) {
+          return cell;
+        }
+      }
+
+      for (const cell of cells) {
+        if (cursorPos < cell.start) {
+          return cell;
+        }
+      }
+
+      return cells.length > 0 ? cells[cells.length - 1] : null;
+    }
+
+    /**
+     * Move the cursor to the start of the next visible cell.
+     * @param {number} currentCellIndex
+     */
+    function moveCursorToNextCell(currentCellIndex) {
+      if (!codeEditor) {
+        return;
+      }
+
+      const cells = getVisibleCells();
+      if (!cells.length) {
+        return;
+      }
+
+      const nextCell = cells.find((cell) => cell.index > currentCellIndex);
+      if (!nextCell) {
+        const source = getEditorSource();
+        const needsLeadingNewline = source.length > 0 && !source.endsWith("\n");
+        const appendedText = `${needsLeadingNewline ? "\n" : ""}# %%\n\n`;
+        const insertAt = source.length;
+        codeEditor.replaceRange(appendedText, codeEditor.posFromIndex(insertAt));
+        const newCellCursorIndex = insertAt + appendedText.length;
+        const newLine = codeEditor.posFromIndex(newCellCursorIndex).line;
+        codeEditor.focus();
+        codeEditor.setCursor({ line: newLine, ch: 0 });
+        return;
+      }
+
+      const nextLine = codeEditor.posFromIndex(nextCell.start).line;
+      codeEditor.focus();
+      codeEditor.setCursor({ line: nextLine, ch: 0 });
+    }
+
+    /**
+     * Run the current cell, then move to the next cell.
+     * If the current cell is the last one, create a new cell first.
+     * @returns {Promise<void>}
+     */
+    async function runCurrentCellAndAdvance() {
+      if (!pyodide || document.getElementById("runCurrentCellBtn").disabled) {
+        return;
+      }
+
+      const currentVisibleCell = getCurrentVisibleCell();
+      const currentCell = getCurrentCell();
+      if (!currentCell || !currentVisibleCell) {
+        return;
+      }
+
+      await runCurrentCell();
+      moveCursorToNextCell(currentVisibleCell.index);
     }
 
     /**
@@ -1849,6 +1936,20 @@ print(" - /outputs/user_summary.csv")
         matchBrackets: true,
         viewportMargin: Infinity,
         extraKeys: {
+          "Shift-Enter"() {
+            if (pyodide && !document.getElementById("runCurrentCellBtn").disabled) {
+              runCurrentCell().catch((error) => {
+                appendConsole(String(error) + "\n");
+                setStatus("Failed.");
+              });
+            }
+          },
+          "Ctrl-Enter"() {
+            runCurrentCellAndAdvance().catch((error) => {
+              appendConsole(String(error) + "\n");
+              setStatus("Failed.");
+            });
+          },
           Tab(cm) {
             cm.execCommand("indentMore");
           },
