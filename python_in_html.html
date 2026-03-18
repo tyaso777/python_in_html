@@ -51,13 +51,42 @@
 
     .row {
       display: flex;
-      gap: 16px;
       align-items: flex-start;
     }
 
     .col {
-      flex: 1;
       min-width: 0;
+    }
+
+    .editor-col {
+      flex: 0 0 58%;
+    }
+
+    .results-col {
+      flex: 1 1 auto;
+    }
+
+    .column-resizer {
+      flex: 0 0 16px;
+      position: relative;
+      cursor: col-resize;
+      min-height: 40px;
+    }
+
+    .column-resizer::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 7px;
+      width: 2px;
+      background: #d7d7d7;
+      border-radius: 999px;
+    }
+
+    .column-resizer:hover::before,
+    .column-resizer.is-dragging::before {
+      background: #1b5fcf;
     }
 
     .panel {
@@ -76,6 +105,34 @@
       font-size: 13px;
       line-height: 1.45;
       background: #fcfcfc;
+    }
+
+    .panel-resize-handle {
+      height: 14px;
+      position: relative;
+      cursor: ns-resize;
+    }
+
+    .panel-resize-handle::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 5px;
+      width: 56px;
+      height: 4px;
+      margin-left: -28px;
+      border-radius: 999px;
+      background: #d7d7d7;
+    }
+
+    .panel-resize-handle:hover::before,
+    .panel-resize-handle.is-dragging::before {
+      background: #1b5fcf;
+    }
+
+    .top-panel {
+      overflow: auto;
+      min-height: 140px;
     }
 
     .CodeMirror-gutters {
@@ -138,6 +195,125 @@
       gap: 8px;
       flex-wrap: wrap;
       margin-top: 10px;
+    }
+
+    .config-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .package-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .package-search {
+      width: min(320px, 100%);
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 13px;
+      box-sizing: border-box;
+    }
+
+    .filter-group {
+      display: grid;
+      gap: 6px;
+    }
+
+    .filter-label {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .filter-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-chip {
+      padding: 6px 10px;
+      border: 1px solid #cfcfcf;
+      border-radius: 999px;
+      background: #fff;
+      font-size: 12px;
+      color: #333;
+      cursor: pointer;
+    }
+
+    .filter-chip.is-active {
+      border-color: #1b5fcf;
+      background: #eaf2ff;
+      color: #0f4499;
+      font-weight: 600;
+    }
+
+    .package-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .package-option {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 10px;
+      align-items: start;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .package-option.is-recommended {
+      border-color: #b6cff8;
+      background: #f4f8ff;
+    }
+
+    .package-main {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .package-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .package-note {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .package-badge {
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #eee;
+      color: #444;
+    }
+
+    .package-badge.recommended {
+      background: #dceafe;
+      color: #0f4499;
+    }
+
+    .package-badge.heavy {
+      background: #ffe6c7;
+      color: #9a4d00;
+    }
+
+    .selected-packages {
+      font-size: 12px;
+      color: #555;
     }
 
     .muted {
@@ -241,10 +417,36 @@
 <body>
   <h1>Pyodide Data Sandbox (Current Cell)</h1>
 
-  <div class="panel">
+  <div id="topPanel" class="panel top-panel">
     <p class="muted">Select files to upload.</p>
     <label for="fileInput" class="file-input-label">Choose Files</label>
     <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json" />
+
+    <div class="config-grid">
+      <div>
+        <p class="muted">Python packages</p>
+        <div class="package-toolbar">
+          <input id="packageSearch" class="package-search" type="search" placeholder="Search packages" />
+          <div class="filter-group">
+            <div class="filter-label">Level</div>
+            <div id="packageLevelFilters" class="filter-list"></div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-label">Domain</div>
+            <div id="packageDomainFilters" class="filter-list"></div>
+          </div>
+        </div>
+        <p id="selectedPackages" class="selected-packages">Selected: -</p>
+        <div id="packageList" class="package-list"></div>
+      </div>
+
+      <div class="toolbar">
+        <button id="saveConfigBtn" type="button">Save Config</button>
+        <button id="loadConfigBtn" type="button">Load Config</button>
+        <button id="restoreConfigBtn" type="button">Restore Default</button>
+        <input id="configFileInput" class="file-input" type="file" accept=".json,application/json" />
+      </div>
+    </div>
 
     <div class="toolbar">
       <button id="runCurrentCellBtn" disabled>Run Current Cell</button>
@@ -258,8 +460,10 @@
     <div id="uploadedFiles"></div>
   </div>
 
+  <div id="topPanelResizeHandle" class="panel-resize-handle" aria-hidden="true"></div>
+
   <div class="row">
-    <div class="col">
+    <div id="editorCol" class="col editor-col">
       <div class="panel">
         <h2>Python code</h2>
         <p class="muted">Use <code># %%</code> to split cells. Run Current Cell executes the cell containing the cursor.</p>
@@ -318,7 +522,9 @@ print(" - /outputs/user_summary.csv")
       </div>
     </div>
 
-    <div class="col">
+    <div id="columnResizer" class="column-resizer" aria-hidden="true"></div>
+
+    <div class="col results-col">
       <div class="panel">
         <h2>Operation Results</h2>
         <div id="resultHistory" class="history">
@@ -329,6 +535,126 @@ print(" - /outputs/user_summary.csv")
   </div>
 
   <script>
+    const CONFIG_VERSION = 1;
+    const PACKAGE_LEVELS = ["Recommended", "Standard", "Advanced", "All"];
+    const PACKAGE_DOMAINS = ["Analysis", "ML", "Plot", "Text", "DB", "Image", "Geo", "Science", "Utility", "All"];
+    const PACKAGE_CATALOG = [
+      { id: "numpy", label: "NumPy", level: "Recommended", domains: ["Analysis"], heavy: false, note: "Numerical arrays" },
+      { id: "pandas", label: "pandas", level: "Recommended", domains: ["Analysis"], heavy: false, note: "Tabular data and CSV work" },
+      { id: "matplotlib", label: "Matplotlib", level: "Recommended", domains: ["Plot"], heavy: false, note: "Charts and plots" },
+      { id: "Bottleneck", label: "Bottleneck", level: "Standard", domains: ["Analysis", "Utility"], heavy: false, note: "Acceleration helpers for NumPy and pandas" },
+      { id: "scipy", label: "SciPy", level: "Standard", domains: ["Analysis", "Science"], heavy: true, note: "Scientific computing" },
+      { id: "statsmodels", label: "statsmodels", level: "Standard", domains: ["Analysis"], heavy: true, note: "Statistical models" },
+      { id: "xarray", label: "xarray", level: "Standard", domains: ["Analysis", "Science"], heavy: true, note: "Labeled multidimensional arrays" },
+      { id: "sympy", label: "SymPy", level: "Standard", domains: ["Analysis"], heavy: false, note: "Symbolic math" },
+      { id: "fastparquet", label: "fastparquet", level: "Standard", domains: ["Analysis", "Utility"], heavy: false, note: "Parquet file support" },
+      { id: "joblib", label: "joblib", level: "Standard", domains: ["Analysis", "Utility"], heavy: false, note: "Model persistence and caching" },
+      { id: "h5py", label: "h5py", level: "Standard", domains: ["Science", "Utility"], heavy: true, note: "HDF5 file access" },
+      { id: "fsspec", label: "fsspec", level: "Standard", domains: ["Utility"], heavy: false, note: "Filesystem abstraction" },
+      { id: "cftime", label: "cftime", level: "Standard", domains: ["Science", "Utility"], heavy: false, note: "Scientific date and time handling" },
+      { id: "autograd", label: "autograd", level: "Advanced", domains: ["Analysis", "Science", "ML"], heavy: false, note: "Automatic differentiation" },
+      { id: "gmpy2", label: "gmpy2", level: "Standard", domains: ["Utility", "Analysis"], heavy: false, note: "High-precision arithmetic" },
+      { id: "cvxpy-base", label: "cvxpy-base", level: "Advanced", domains: ["Analysis", "Science"], heavy: true, note: "Convex optimization modeling" },
+      { id: "clarabel", label: "clarabel", level: "Advanced", domains: ["Analysis", "Science"], heavy: true, note: "Optimization solver" },
+      { id: "highspy", label: "highspy", level: "Advanced", domains: ["Analysis"], heavy: true, note: "Linear optimization solver" },
+      { id: "scikit-learn", label: "scikit-learn", level: "Advanced", domains: ["ML", "Analysis"], heavy: true, note: "General machine learning" },
+      { id: "lightgbm", label: "LightGBM", level: "Advanced", domains: ["ML"], heavy: true, note: "Gradient boosting" },
+      { id: "bokeh", label: "Bokeh", level: "Standard", domains: ["Plot"], heavy: true, note: "Interactive plotting" },
+      { id: "altair", label: "Altair", level: "Standard", domains: ["Plot"], heavy: true, note: "Declarative visualization" },
+      { id: "colorspacious", label: "colorspacious", level: "Standard", domains: ["Plot", "Utility"], heavy: false, note: "Color space conversions" },
+      { id: "contourpy", label: "contourpy", level: "Standard", domains: ["Plot", "Utility"], heavy: false, note: "Contour generation" },
+      { id: "Cartopy", label: "Cartopy", level: "Advanced", domains: ["Geo", "Plot", "Science"], heavy: true, note: "Map projections and geographic plotting" },
+      { id: "astropy", label: "astropy", level: "Advanced", domains: ["Science"], heavy: true, note: "Astronomy tools" },
+      { id: "healpy", label: "healpy", level: "Advanced", domains: ["Science", "Plot"], heavy: true, note: "Spherical map analysis" },
+      { id: "beautifulsoup4", label: "beautifulsoup4", level: "Standard", domains: ["Text"], heavy: false, note: "HTML parsing" },
+      { id: "lxml", label: "lxml", level: "Standard", domains: ["Text"], heavy: true, note: "XML and HTML processing" },
+      { id: "regex", label: "regex", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "Advanced regular expressions" },
+      { id: "Jinja2", label: "Jinja2", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "Template rendering" },
+      { id: "html5lib", label: "html5lib", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "Standards-compliant HTML parser" },
+      { id: "cssselect", label: "cssselect", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "CSS selector matching" },
+      { id: "css-inline", label: "css-inline", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "Inline CSS for HTML documents" },
+      { id: "bleach", label: "bleach", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "HTML sanitization" },
+      { id: "MarkupSafe", label: "MarkupSafe", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "Safe string handling for templates" },
+      { id: "libcst", label: "LibCST", level: "Advanced", domains: ["Text", "Utility"], heavy: true, note: "Python concrete syntax tree editing" },
+      { id: "apsw", label: "APSW", level: "Standard", domains: ["DB"], heavy: false, note: "SQLite access" },
+      { id: "sqlalchemy", label: "SQLAlchemy", level: "Advanced", domains: ["DB"], heavy: true, note: "SQL toolkit" },
+      { id: "affine", label: "affine", level: "Standard", domains: ["Geo", "Utility"], heavy: false, note: "Affine transformations for coordinates" },
+      { id: "fiona", label: "Fiona", level: "Advanced", domains: ["Geo", "Utility"], heavy: true, note: "Vector geodata I/O" },
+      { id: "geopandas", label: "GeoPandas", level: "Advanced", domains: ["Geo", "Analysis"], heavy: true, note: "Geospatial tabular analysis" },
+      { id: "shapely", label: "Shapely", level: "Standard", domains: ["Geo"], heavy: false, note: "Geometry operations" },
+      { id: "rasterio", label: "rasterio", level: "Advanced", domains: ["Geo", "Image"], heavy: true, note: "Raster geodata processing" },
+      { id: "pyproj", label: "pyproj", level: "Standard", domains: ["Geo"], heavy: false, note: "Coordinate reference transformations" },
+      { id: "h3", label: "H3", level: "Standard", domains: ["Geo", "Analysis"], heavy: false, note: "Hexagonal geospatial indexing" },
+      { id: "Pillow", label: "Pillow", level: "Standard", domains: ["Image"], heavy: false, note: "Image I/O and editing" },
+      { id: "imageio", label: "imageio", level: "Standard", domains: ["Image", "Utility"], heavy: false, note: "Image reading and writing" },
+      { id: "lazy_loader", label: "lazy_loader", level: "Standard", domains: ["Utility"], heavy: false, note: "Lazy imports for image and analysis stacks" },
+      { id: "scikit-image", label: "scikit-image", level: "Advanced", domains: ["Image"], heavy: true, note: "Image analysis" },
+      { id: "opencv-python", label: "opencv-python", level: "Advanced", domains: ["Image"], heavy: true, note: "Computer vision toolkit" },
+      { id: "igraph", label: "igraph", level: "Standard", domains: ["Analysis", "Science"], heavy: true, note: "Graph analysis" },
+      { id: "nltk", label: "NLTK", level: "Advanced", domains: ["Text", "Science"], heavy: true, note: "Natural language toolkit" },
+      { id: "biopython", label: "biopython", level: "Advanced", domains: ["Science"], heavy: true, note: "Bioinformatics tools" },
+      { id: "boost-histogram", label: "boost-histogram", level: "Standard", domains: ["Analysis", "Plot"], heavy: false, note: "High-performance histogramming" },
+      { id: "galpy", label: "galpy", level: "Advanced", domains: ["Science"], heavy: true, note: "Galactic dynamics" },
+      { id: "coolprop", label: "CoolProp", level: "Advanced", domains: ["Science", "Analysis"], heavy: true, note: "Thermophysical properties" }
+    ];
+    const AVAILABLE_PACKAGES = PACKAGE_CATALOG.map((pkg) => pkg.id);
+    const defaultConfig = {
+      configVersion: CONFIG_VERSION,
+      packages: ["numpy", "pandas", "matplotlib"],
+      code: `# %%
+import os
+import pandas as pd
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+
+print("files in /uploads =", os.listdir("/uploads"))
+
+# %%
+users = pd.read_csv("/uploads/sample_user.csv")
+purchases = pd.read_csv("/uploads/sample_purchase.csv")
+
+print("\\n[users]")
+print(users.head())
+
+print("\\n[purchases]")
+print(purchases.head())
+
+# %%
+df = pd.merge(purchases, users, on="user_id", how="left")
+
+print("\\n[joined]")
+print(df.head())
+
+user_summary = (
+    df.groupby("user_name")["amount"]
+    .sum()
+    .reset_index()
+    .sort_values("amount", ascending=False)
+)
+
+print("\\n[user_summary]")
+print(user_summary)
+
+# %%
+plt.figure(figsize=(8, 4))
+plt.bar(user_summary["user_name"], user_summary["amount"])
+plt.title("Total Purchase Amount by User")
+plt.xlabel("User")
+plt.ylabel("Amount")
+plt.xticks(rotation=30)
+plt.tight_layout()
+plt.savefig("/outputs/user_total.png", dpi=140)
+
+user_summary.to_csv("/outputs/user_summary.csv", index=False)
+
+print("\\nSaved:")
+print(" - /outputs/user_total.png")
+print(" - /outputs/user_summary.csv")
+`
+    };
+
     let pyodide = null;
     let sharedGlobals = null;
     let codeEditor = null;
@@ -337,6 +663,13 @@ print(" - /outputs/user_summary.csv")
     let createdObjectUrls = [];
     let decoratedSeparatorLines = [];
     let decoratedCurrentCellLines = [];
+    let loadedPackages = new Set();
+    let activePackageLevel = "Recommended";
+    let activePackageDomain = "All";
+    let packageSearchQuery = "";
+    let selectedPackagesState = new Set(defaultConfig.packages);
+    let isResizingColumns = false;
+    let isResizingTopPanel = false;
 
     /** @type {Map<string, File>} */
     let currentFiles = new Map();
@@ -360,6 +693,256 @@ print(" - /outputs/user_summary.csv")
      */
     function setStatus(text) {
       document.getElementById("status").textContent = text;
+    }
+
+    /**
+     * Update the editor/results column split based on viewport X.
+     * @param {number} clientX
+     */
+    function setEditorColumnWidth(clientX) {
+      const rowEl = document.querySelector(".row");
+      const editorColEl = document.getElementById("editorCol");
+      const resultsColEl = document.querySelector(".results-col");
+      if (!rowEl || !editorColEl || !resultsColEl) {
+        return;
+      }
+
+      const rowRect = rowEl.getBoundingClientRect();
+      const minEditorWidth = 360;
+      const minResultsWidth = 280;
+      const nextWidth = Math.min(
+        rowRect.width - minResultsWidth,
+        Math.max(minEditorWidth, clientX - rowRect.left)
+      );
+
+      editorColEl.style.flexBasis = `${nextWidth}px`;
+      resultsColEl.style.flexBasis = `${Math.max(minResultsWidth, rowRect.width - nextWidth - 16)}px`;
+      if (codeEditor) {
+        codeEditor.refresh();
+      }
+    }
+
+    /**
+     * Update the top panel height based on viewport Y.
+     * @param {number} clientY
+     */
+    function setTopPanelHeight(clientY) {
+      const topPanelEl = document.getElementById("topPanel");
+      if (!topPanelEl) {
+        return;
+      }
+
+      const panelRect = topPanelEl.getBoundingClientRect();
+      const minHeight = 140;
+      const nextHeight = Math.max(minHeight, clientY - panelRect.top);
+      topPanelEl.style.height = `${nextHeight}px`;
+      codeEditor.refresh();
+    }
+
+    /**
+     * Create a deep copy of the default config.
+     * @returns {{ configVersion: number, packages: string[], code: string }}
+     */
+    function getDefaultConfig() {
+      return {
+        configVersion: defaultConfig.configVersion,
+        packages: [...defaultConfig.packages],
+        code: defaultConfig.code
+      };
+    }
+
+    /**
+     * Get the currently selected package names.
+     * @returns {string[]}
+     */
+    function getSelectedPackages() {
+      return AVAILABLE_PACKAGES.filter((pkg) => selectedPackagesState.has(pkg));
+    }
+
+    /**
+     * Get the current app config from the UI.
+     * @returns {{ configVersion: number, packages: string[], code: string }}
+     */
+    function getCurrentConfig() {
+      return {
+        configVersion: CONFIG_VERSION,
+        packages: getSelectedPackages(),
+        code: getEditorSource()
+      };
+    }
+
+    /**
+     * Normalize and validate an incoming config object.
+     * @param {unknown} rawConfig
+     * @returns {{ configVersion: number, packages: string[], code: string }}
+     */
+    function normalizeConfig(rawConfig) {
+      if (!rawConfig || typeof rawConfig !== "object") {
+        throw new Error("Config must be a JSON object.");
+      }
+
+      const maybeConfig = /** @type {{ configVersion?: unknown, packages?: unknown, code?: unknown }} */ (rawConfig);
+      const packages = Array.isArray(maybeConfig.packages)
+        ? maybeConfig.packages.filter((pkg) => typeof pkg === "string" && AVAILABLE_PACKAGES.includes(pkg))
+        : [];
+
+      if (typeof maybeConfig.code !== "string") {
+        throw new Error("Config field 'code' must be a string.");
+      }
+
+      return {
+        configVersion: typeof maybeConfig.configVersion === "number" ? maybeConfig.configVersion : CONFIG_VERSION,
+        packages: [...new Set(packages)],
+        code: maybeConfig.code
+      };
+    }
+
+    /**
+     * Update package checkboxes from config data.
+     * @param {{ packages: string[] }} config
+     */
+    function applyPackageSelection(config) {
+      selectedPackagesState = new Set(config.packages.filter((pkg) => AVAILABLE_PACKAGES.includes(pkg)));
+      renderPackageOptions();
+      renderSelectedPackages();
+    }
+
+    /**
+     * Apply a config to the current UI.
+     * @param {{ configVersion: number, packages: string[], code: string }} config
+     */
+    function applyConfig(config) {
+      applyPackageSelection(config);
+
+      if (codeEditor) {
+        codeEditor.setValue(config.code);
+      } else {
+        document.getElementById("code").value = config.code;
+      }
+
+      updateCurrentCellInfo();
+      refreshEditorDecorations();
+    }
+
+    /**
+     * Build the package checkbox UI.
+     */
+    function renderChipList(containerId, values, activeValue, dataAttr) {
+      const filtersEl = document.getElementById(containerId);
+      filtersEl.innerHTML = "";
+
+      for (const value of values) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `filter-chip${value === activeValue ? " is-active" : ""}`;
+        button.textContent = value;
+        button.dataset[dataAttr] = value;
+        filtersEl.appendChild(button);
+      }
+    }
+
+    /**
+     * Render package filter chips for both axes.
+     */
+    function renderPackageFilters() {
+      renderChipList("packageLevelFilters", PACKAGE_LEVELS, activePackageLevel, "level");
+      renderChipList("packageDomainFilters", PACKAGE_DOMAINS, activePackageDomain, "domain");
+    }
+
+    /**
+     * Render the selected package summary.
+     */
+    function renderSelectedPackages() {
+      const selectedEl = document.getElementById("selectedPackages");
+      const selected = getSelectedPackages();
+      selectedEl.textContent = `Selected: ${selected.length ? selected.join(", ") : "-"}`;
+    }
+
+    /**
+     * Build the package catalog UI.
+     */
+    function renderPackageOptions() {
+      const packageListEl = document.getElementById("packageList");
+      packageListEl.innerHTML = "";
+
+      const normalizedQuery = packageSearchQuery.trim().toLowerCase();
+      const visiblePackages = PACKAGE_CATALOG.filter((pkg) => {
+        const matchesLevel = activePackageLevel === "All"
+          || pkg.level === activePackageLevel;
+        const matchesDomain = activePackageDomain === "All"
+          || pkg.domains.includes(activePackageDomain);
+        const matchesQuery = normalizedQuery.length === 0
+          || pkg.id.toLowerCase().includes(normalizedQuery)
+          || pkg.label.toLowerCase().includes(normalizedQuery)
+          || pkg.note.toLowerCase().includes(normalizedQuery);
+        return matchesLevel && matchesDomain && matchesQuery;
+      }).sort((a, b) => {
+        const byLabel = a.label.localeCompare(b.label, "en", { sensitivity: "base" });
+        return byLabel !== 0
+          ? byLabel
+          : a.id.localeCompare(b.id, "en", { sensitivity: "base" });
+      });
+
+      if (!visiblePackages.length) {
+        const empty = document.createElement("div");
+        empty.className = "muted";
+        empty.textContent = "No packages match the current filter.";
+        packageListEl.appendChild(empty);
+        renderSelectedPackages();
+        return;
+      }
+
+      for (const pkg of visiblePackages) {
+        const label = document.createElement("label");
+        label.className = `package-option${pkg.level === "Recommended" ? " is-recommended" : ""}`;
+
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.dataset.packageId = pkg.id;
+        checkbox.checked = selectedPackagesState.has(pkg.id);
+
+        const content = document.createElement("div");
+
+        const main = document.createElement("div");
+        main.className = "package-main";
+
+        const packageLabel = document.createElement("span");
+        packageLabel.className = "package-label";
+        packageLabel.textContent = pkg.label;
+
+        main.appendChild(packageLabel);
+
+        if (pkg.level === "Recommended") {
+          const recommendedBadge = document.createElement("span");
+          recommendedBadge.className = "package-badge recommended";
+          recommendedBadge.textContent = "Recommended";
+          main.appendChild(recommendedBadge);
+        }
+
+        const levelBadge = document.createElement("span");
+        levelBadge.className = "package-badge";
+        levelBadge.textContent = pkg.level;
+        main.appendChild(levelBadge);
+
+        if (pkg.heavy) {
+          const heavyBadge = document.createElement("span");
+          heavyBadge.className = "package-badge heavy";
+          heavyBadge.textContent = "Heavy";
+          main.appendChild(heavyBadge);
+        }
+
+        const note = document.createElement("div");
+        note.className = "package-note";
+        note.textContent = `${pkg.id} | ${pkg.domains.join(", ")} | ${pkg.note}`;
+
+        label.appendChild(checkbox);
+        content.appendChild(main);
+        content.appendChild(note);
+        label.appendChild(content);
+        packageListEl.appendChild(label);
+      }
+
+      renderSelectedPackages();
     }
 
     /**
@@ -535,6 +1118,26 @@ print(" - /outputs/user_summary.csv")
         clearDir("/outputs");
       }
       setStatus("Ready.");
+    }
+
+    /**
+     * Save the current config as a downloadable JSON file.
+     */
+    function saveConfig() {
+      const config = getCurrentConfig();
+      const blob = new Blob([JSON.stringify(config, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "python_in_html.config.json";
+      link.click();
+      URL.revokeObjectURL(url);
+
+      const operation = createOperationCard("Save Config", { includeConsole: false });
+      appendTextListSection(operation.bodyEl, "Saved Config", [
+        `packages: ${config.packages.join(", ") || "(none)"}`,
+        `code length: ${config.code.length} chars`
+      ]);
     }
 
     /**
@@ -926,6 +1529,26 @@ print(" - /outputs/user_summary.csv")
     }
 
     /**
+     * Ensure the selected Python packages are loaded in Pyodide.
+     * @returns {Promise<void>}
+     */
+    async function ensureSelectedPackagesLoaded() {
+      const packagesToLoad = getSelectedPackages().filter((pkg) => !loadedPackages.has(pkg));
+      if (!packagesToLoad.length) {
+        return;
+      }
+
+      setStatus(`Loading packages: ${packagesToLoad.join(", ")}...`);
+      await pyodide.loadPackage(packagesToLoad, {
+        checkIntegrity: true
+      });
+
+      for (const pkg of packagesToLoad) {
+        loadedPackages.add(pkg);
+      }
+    }
+
+    /**
      * Prepare the file system before execution.
      * @returns {Promise<void>}
      */
@@ -947,6 +1570,7 @@ print(" - /outputs/user_summary.csv")
      */
     async function executeCellOperation(cell) {
       activeOperation = createOperationCard(`Run Current Cell ${cell.index + 1}`);
+      await ensureSelectedPackagesLoaded();
       setStatus(`Preparing current cell ${cell.index + 1}...`);
       await prepareExecution();
       const outputSnapshotBefore = getOutputSnapshot();
@@ -1052,13 +1676,9 @@ print(" - /outputs/user_summary.csv")
         batched: (msg) => appendConsole("[stderr] " + msg + "\n")
       });
 
-      setStatus("Loading packages: numpy, pandas, matplotlib...");
-      await pyodide.loadPackage(["numpy", "pandas", "matplotlib"], {
-        checkIntegrity: true
-      });
-
       ensureDir("/uploads");
       ensureDir("/outputs");
+      await ensureSelectedPackagesLoaded();
       resetSharedGlobals();
       renderUploadedFiles();
       updateCurrentCellInfo();
@@ -1066,6 +1686,37 @@ print(" - /outputs/user_summary.csv")
       document.getElementById("runCurrentCellBtn").disabled = false;
       document.getElementById("runAllBtn").disabled = false;
 
+      setStatus("Ready.");
+    }
+
+    /**
+     * Restore the built-in default config.
+     */
+    function restoreDefaultConfig() {
+      applyConfig(getDefaultConfig());
+      const operation = createOperationCard("Restore Default", { includeConsole: false });
+      appendTextListSection(operation.bodyEl, "Applied Config", [
+        `packages: ${defaultConfig.packages.join(", ")}`,
+        "code: restored default content"
+      ]);
+      setStatus("Ready.");
+    }
+
+    /**
+     * Load a config file selected by the user.
+     * @param {File} file
+     * @returns {Promise<void>}
+     */
+    async function loadConfigFile(file) {
+      const text = await file.text();
+      const config = normalizeConfig(JSON.parse(text));
+      applyConfig(config);
+
+      const operation = createOperationCard("Load Config", { includeConsole: false });
+      appendTextListSection(operation.bodyEl, "Loaded Config", [
+        `packages: ${config.packages.join(", ") || "(none)"}`,
+        `code length: ${config.code.length} chars`
+      ]);
       setStatus("Ready.");
     }
 
@@ -1094,11 +1745,127 @@ print(" - /outputs/user_summary.csv")
       clearResults();
     });
 
+    document.getElementById("saveConfigBtn").addEventListener("click", () => {
+      saveConfig();
+    });
+
+    document.getElementById("packageLevelFilters").addEventListener("click", (event) => {
+      const filterButton = event.target.closest("[data-level]");
+      if (!filterButton) {
+        return;
+      }
+
+      activePackageLevel = filterButton.dataset.level || "Recommended";
+      renderPackageFilters();
+      renderPackageOptions();
+    });
+
+    document.getElementById("packageDomainFilters").addEventListener("click", (event) => {
+      const filterButton = event.target.closest("[data-domain]");
+      if (!filterButton) {
+        return;
+      }
+
+      activePackageDomain = filterButton.dataset.domain || "All";
+      renderPackageFilters();
+      renderPackageOptions();
+    });
+
+    document.getElementById("packageSearch").addEventListener("input", (event) => {
+      packageSearchQuery = event.target.value || "";
+      renderPackageOptions();
+    });
+
+    document.getElementById("packageList").addEventListener("change", (event) => {
+      const checkbox = event.target.closest("input[data-package-id]");
+      if (!checkbox) {
+        return;
+      }
+
+      const packageId = checkbox.dataset.packageId;
+      if (!packageId) {
+        return;
+      }
+
+      if (checkbox.checked) {
+        selectedPackagesState.add(packageId);
+      } else {
+        selectedPackagesState.delete(packageId);
+      }
+
+      renderSelectedPackages();
+    });
+
+    document.getElementById("columnResizer").addEventListener("mousedown", (event) => {
+      isResizingColumns = true;
+      event.preventDefault();
+      event.currentTarget.classList.add("is-dragging");
+    });
+
+    document.addEventListener("mousemove", (event) => {
+      if (isResizingColumns) {
+        setEditorColumnWidth(event.clientX);
+      }
+
+      if (isResizingTopPanel) {
+        setTopPanelHeight(event.clientY);
+      }
+    });
+
+    document.addEventListener("mouseup", () => {
+      if (!isResizingColumns) {
+        if (!isResizingTopPanel) {
+          return;
+        }
+      }
+
+      if (isResizingColumns) {
+        isResizingColumns = false;
+        document.getElementById("columnResizer").classList.remove("is-dragging");
+      }
+
+      if (isResizingTopPanel) {
+        isResizingTopPanel = false;
+        document.getElementById("topPanelResizeHandle").classList.remove("is-dragging");
+      }
+    });
+
+    document.getElementById("topPanelResizeHandle").addEventListener("mousedown", (event) => {
+      isResizingTopPanel = true;
+      event.preventDefault();
+      event.currentTarget.classList.add("is-dragging");
+    });
+
+    document.getElementById("loadConfigBtn").addEventListener("click", () => {
+      document.getElementById("configFileInput").click();
+    });
+
+    document.getElementById("restoreConfigBtn").addEventListener("click", () => {
+      restoreDefaultConfig();
+    });
+
+    document.getElementById("configFileInput").addEventListener("change", (event) => {
+      const [file] = Array.from(event.target.files || []);
+      event.target.value = "";
+      if (!file) {
+        return;
+      }
+
+      loadConfigFile(file).catch((error) => {
+        const operation = createOperationCard("Load Config Failed");
+        operation.consoleEl.textContent = String(error) + "\n";
+        setStatus("Failed.");
+      });
+    });
+
     document.getElementById("fileInput").addEventListener("change", (event) => {
       setFiles(event.target.files || []);
       event.target.value = "";
     });
 
+    renderPackageFilters();
+    renderPackageOptions();
+    applyConfig(getDefaultConfig());
     initCodeEditor();
 
     initPyodide().catch((error) => {
