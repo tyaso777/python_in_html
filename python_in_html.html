@@ -284,7 +284,7 @@
 
     .resizable-subpanel {
       overflow: auto;
-      min-height: 76px;
+      min-height: 30px;
     }
 
     .subpanel-resize-handle {
@@ -354,6 +354,13 @@
       justify-content: space-between;
     }
 
+    .config-summary-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
     .config-summary {
       display: grid;
       gap: 2px;
@@ -366,10 +373,8 @@
     }
 
     .package-toolbar {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
       gap: 8px;
-      align-items: center;
     }
 
     .package-summary-row {
@@ -415,6 +420,27 @@
     .filter-group {
       display: grid;
       gap: 6px;
+    }
+
+    .filter-panel {
+      display: grid;
+      grid-template-columns: fit-content(48%) auto fit-content(48%);
+      gap: 6px;
+      align-items: start;
+      justify-content: start;
+      padding: 8px;
+      border: 1px solid #e3e3e3;
+      border-radius: 8px;
+      background: #fcfcfc;
+    }
+
+    .filter-cross {
+      align-self: center;
+      font-size: 14px;
+      color: #888;
+      font-weight: 600;
+      padding-top: 18px;
+      margin: 0 4px;
     }
 
     .filter-label {
@@ -614,7 +640,12 @@
           <p class="muted">Configuration</p>
           <div id="configSummaryText" class="selected-packages">Selected packages: numpy, pandas, matplotlib</div>
         </div>
-        <button id="toggleConfigBtn" class="text-link-btn" type="button">Edit Config ▾</button>
+        <div class="config-summary-actions">
+          <button id="saveConfigBtn" class="icon-btn" type="button" title="Save Config" aria-label="Save Config">⤓</button>
+          <button id="loadConfigBtn" class="icon-btn" type="button" title="Load Config" aria-label="Load Config">⤒</button>
+          <button id="restoreConfigBtn" class="icon-btn" type="button" title="Restore Default" aria-label="Restore Default">↶</button>
+          <button id="toggleConfigBtn" class="icon-btn" type="button" title="Show Config" aria-label="Show Config">▾</button>
+        </div>
       </div>
 
       <div id="configControls" class="config-controls" hidden>
@@ -632,25 +663,23 @@
             <div id="packageControls" class="package-controls" hidden>
               <div class="package-toolbar">
                 <input id="packageSearch" class="package-search" type="search" placeholder="Search packages" />
-                <div class="filter-group">
-                  <div class="filter-label">Level</div>
-                  <div id="packageLevelFilters" class="filter-list"></div>
-                </div>
-                <div class="filter-group">
-                  <div class="filter-label">Domain</div>
-                  <div id="packageDomainFilters" class="filter-list"></div>
+                <div class="filter-panel">
+                  <div class="filter-group">
+                    <div class="filter-label">Level</div>
+                    <div id="packageLevelFilters" class="filter-list"></div>
+                  </div>
+                  <div class="filter-cross" aria-hidden="true">×</div>
+                  <div class="filter-group">
+                    <div class="filter-label">Domain</div>
+                    <div id="packageDomainFilters" class="filter-list"></div>
+                  </div>
                 </div>
               </div>
               <div id="packageList" class="package-list"></div>
             </div>
           </div>
 
-          <div class="toolbar">
-            <button id="saveConfigBtn" type="button">Save Config</button>
-            <button id="loadConfigBtn" type="button">Load Config</button>
-            <button id="restoreConfigBtn" type="button">Restore Default</button>
-            <input id="configFileInput" class="file-input" type="file" accept=".json,application/json" />
-          </div>
+          <input id="configFileInput" class="file-input" type="file" accept=".json,application/json" />
         </div>
       </div>
     </div>
@@ -963,7 +992,7 @@ print(" - /outputs/user_summary.csv")
 
       const panelRect = configPanelEl.getBoundingClientRect();
       const inputPanelRect = inputPanelEl.getBoundingClientRect();
-      const minHeight = 76;
+      const minHeight = 30;
       const handleHeight = 14;
       const stackGap = 12;
       const maxHeight = Math.max(
@@ -1206,7 +1235,9 @@ print(" - /outputs/user_summary.csv")
       const configControlsEl = document.getElementById("configControls");
       const toggleConfigBtnEl = document.getElementById("toggleConfigBtn");
       configControlsEl.hidden = !isConfigPanelOpen;
-      toggleConfigBtnEl.textContent = isConfigPanelOpen ? "Hide Config ▴" : "Edit Config ▾";
+      toggleConfigBtnEl.textContent = isConfigPanelOpen ? "▴" : "▾";
+      toggleConfigBtnEl.title = isConfigPanelOpen ? "Hide Config" : "Show Config";
+      toggleConfigBtnEl.setAttribute("aria-label", isConfigPanelOpen ? "Hide Config" : "Show Config");
       syncConfigPanelHeight();
     }
 
