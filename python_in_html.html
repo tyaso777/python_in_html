@@ -186,6 +186,47 @@
       color: #222;
     }
 
+    .upload-row {
+      display: flex;
+      align-items: stretch;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .upload-actions {
+      display: grid;
+      gap: 6px;
+      align-content: start;
+      flex: 0 0 auto;
+    }
+
+    .upload-divider {
+      width: 1px;
+      background: #d9d9d9;
+      align-self: stretch;
+      min-height: 56px;
+    }
+
+    .upload-summary {
+      min-width: 0;
+      flex: 1 1 auto;
+      display: grid;
+      gap: 6px;
+      align-content: start;
+    }
+
+    .uploaded-files-box {
+      max-height: 132px;
+      overflow: auto;
+      padding-right: 6px;
+    }
+
+    .section-divider {
+      height: 1px;
+      background: #e1e1e1;
+      margin: 12px 0;
+    }
+
     .small-btn {
       padding: 2px 8px;
       font-size: 12px;
@@ -198,10 +239,62 @@
       margin-top: 10px;
     }
 
+    .editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .editor-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+
+    .icon-btn {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid #cfcfcf;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 14px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.45;
+      cursor: default;
+    }
+
     .config-grid {
       display: grid;
       gap: 12px;
       margin-top: 12px;
+    }
+
+    .config-summary-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .config-summary {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .config-controls[hidden] {
+      display: none;
     }
 
     .package-toolbar {
@@ -450,54 +543,68 @@
   <h1>Pyodide Data Sandbox (Current Cell)</h1>
 
   <div id="topPanel" class="panel top-panel">
-    <p class="muted">Select files to upload.</p>
-    <label for="fileInput" class="file-input-label">Choose Files</label>
-    <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json" />
-
-    <div class="config-grid">
-      <div>
-        <div class="package-summary-row">
-          <div class="package-summary">
-            <p class="muted">Python packages</p>
-            <div id="packageCount" class="package-count">3 selected</div>
-            <p id="selectedPackages" class="selected-packages">Selected: numpy, pandas, matplotlib</p>
-          </div>
-          <button id="togglePackagesBtn" type="button">Edit Packages</button>
-        </div>
-        <div id="packageControls" class="package-controls" hidden>
-          <div class="package-toolbar">
-            <input id="packageSearch" class="package-search" type="search" placeholder="Search packages" />
-            <div class="filter-group">
-              <div class="filter-label">Level</div>
-              <div id="packageLevelFilters" class="filter-list"></div>
-            </div>
-            <div class="filter-group">
-              <div class="filter-label">Domain</div>
-              <div id="packageDomainFilters" class="filter-list"></div>
-            </div>
-          </div>
-          <div id="packageList" class="package-list"></div>
-        </div>
+    <div class="config-summary-row">
+      <div class="config-summary">
+        <p class="muted">Configuration</p>
+        <div id="configSummaryText" class="selected-packages">Packages: numpy, pandas, matplotlib</div>
       </div>
+      <button id="toggleConfigBtn" type="button">Edit Config ▾</button>
+    </div>
 
-      <div class="toolbar">
-        <button id="saveConfigBtn" type="button">Save Config</button>
-        <button id="loadConfigBtn" type="button">Load Config</button>
-        <button id="restoreConfigBtn" type="button">Restore Default</button>
-        <input id="configFileInput" class="file-input" type="file" accept=".json,application/json" />
+    <div id="configControls" class="config-controls" hidden>
+      <div class="section-divider" aria-hidden="true"></div>
+      <div class="config-grid">
+        <div>
+          <div class="package-summary-row">
+            <div class="package-summary">
+              <p class="muted">Python packages</p>
+              <div id="packageCount" class="package-count">3 selected</div>
+              <p id="selectedPackages" class="selected-packages">Selected: numpy, pandas, matplotlib</p>
+            </div>
+            <button id="togglePackagesBtn" type="button">Edit Packages</button>
+          </div>
+          <div id="packageControls" class="package-controls" hidden>
+            <div class="package-toolbar">
+              <input id="packageSearch" class="package-search" type="search" placeholder="Search packages" />
+              <div class="filter-group">
+                <div class="filter-label">Level</div>
+                <div id="packageLevelFilters" class="filter-list"></div>
+              </div>
+              <div class="filter-group">
+                <div class="filter-label">Domain</div>
+                <div id="packageDomainFilters" class="filter-list"></div>
+              </div>
+            </div>
+            <div id="packageList" class="package-list"></div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button id="saveConfigBtn" type="button">Save Config</button>
+          <button id="loadConfigBtn" type="button">Load Config</button>
+          <button id="restoreConfigBtn" type="button">Restore Default</button>
+          <input id="configFileInput" class="file-input" type="file" accept=".json,application/json" />
+        </div>
       </div>
     </div>
 
-    <div class="toolbar">
-      <button id="runCurrentCellBtn" disabled>Run Current Cell</button>
-      <button id="runAllBtn" disabled>Run All Cells</button>
-      <button id="resetSessionBtn" type="button" disabled>Reset Session</button>
-      <button id="clearOutputBtn" type="button">Clear Output</button>
+    <div class="section-divider" aria-hidden="true"></div>
+
+    <div class="upload-row">
+      <div class="upload-actions">
+        <p class="muted">Select files to upload.</p>
+        <label for="fileInput" class="file-input-label">Choose Files</label>
+        <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json" />
+      </div>
+      <div class="upload-divider" aria-hidden="true"></div>
+      <div class="upload-summary">
+        <p class="muted">Uploaded files</p>
+        <div id="uploadedFiles" class="uploaded-files-box">No files uploaded yet.</div>
+      </div>
     </div>
 
     <p class="status" id="status">Initializing Pyodide...</p>
     <div id="currentCellInfo" class="current-cell-info">Current cell: -</div>
-    <div id="uploadedFiles"></div>
   </div>
 
   <div id="topPanelResizeHandle" class="panel-resize-handle" aria-hidden="true"></div>
@@ -505,7 +612,15 @@
   <div class="row">
     <div id="editorCol" class="col editor-col">
       <div class="panel">
-        <h2>Python code</h2>
+        <div class="editor-header">
+          <h2>Python code</h2>
+          <div class="editor-actions">
+            <button id="runCurrentCellBtn" class="icon-btn" type="button" title="Run Current Cell" aria-label="Run Current Cell" disabled>▶</button>
+            <button id="runAllBtn" class="icon-btn" type="button" title="Run All Cells" aria-label="Run All Cells" disabled>≫</button>
+            <button id="resetSessionBtn" class="icon-btn" type="button" title="Reset Session" aria-label="Reset Session" disabled>↺</button>
+            <button id="clearOutputBtn" class="icon-btn" type="button" title="Clear Output" aria-label="Clear Output">⌫</button>
+          </div>
+        </div>
         <p class="muted">Use <code># %%</code> to split cells. Run Current Cell executes the cell containing the cursor.</p>
         <textarea id="code"># %%
 import os
@@ -708,6 +823,7 @@ print(" - /outputs/user_summary.csv")
     let activePackageDomain = "All";
     let packageSearchQuery = "";
     let selectedPackagesState = new Set(defaultConfig.packages);
+    let isConfigPanelOpen = false;
     let isPackagePanelOpen = false;
     let isResizingColumns = false;
     let isResizingTopPanel = false;
@@ -778,6 +894,30 @@ print(" - /outputs/user_summary.csv")
       const nextHeight = Math.max(minHeight, clientY - panelRect.top);
       topPanelEl.style.height = `${nextHeight}px`;
       syncEditorHeight();
+    }
+
+    /**
+     * Resize the top panel to fit its current content while keeping room for the editor.
+     */
+    function fitTopPanelToContent() {
+      const topPanelEl = document.getElementById("topPanel");
+      if (!topPanelEl) {
+        return;
+      }
+
+      const minHeight = 140;
+      const minEditorHeight = 280;
+      const handleHeight = 14;
+      const viewportPadding = 16;
+      const panelTop = topPanelEl.getBoundingClientRect().top;
+      const maxHeight = Math.max(
+        minHeight,
+        Math.floor(window.innerHeight - panelTop - handleHeight - minEditorHeight - viewportPadding)
+      );
+
+      topPanelEl.style.height = "auto";
+      const nextHeight = Math.max(minHeight, Math.min(maxHeight, topPanelEl.scrollHeight));
+      topPanelEl.style.height = `${nextHeight}px`;
     }
 
     /**
@@ -914,10 +1054,12 @@ print(" - /outputs/user_summary.csv")
       const selectedEl = document.getElementById("selectedPackages");
       const packageCountEl = document.getElementById("packageCount");
       const togglePackagesBtnEl = document.getElementById("togglePackagesBtn");
+      const configSummaryTextEl = document.getElementById("configSummaryText");
       const selected = getSelectedPackages();
       const hasHeavy = selected.some((pkgId) => PACKAGE_CATALOG.find((pkg) => pkg.id === pkgId)?.heavy);
       packageCountEl.textContent = `${selected.length} selected${hasHeavy ? " - Heavy included" : ""}`;
       selectedEl.textContent = `Selected: ${selected.length ? selected.join(", ") : "-"}`;
+      configSummaryTextEl.textContent = `Packages: ${selected.length ? selected.join(", ") : "(none)"}${hasHeavy ? " - Heavy included" : ""}`;
       togglePackagesBtnEl.textContent = isPackagePanelOpen ? "Close Packages" : "Edit Packages";
     }
 
@@ -926,6 +1068,16 @@ print(" - /outputs/user_summary.csv")
      */
     function renderPackagePanel() {
       document.getElementById("packageControls").hidden = !isPackagePanelOpen;
+    }
+
+    /**
+     * Show or hide the expanded config controls.
+     */
+    function renderConfigPanel() {
+      const configControlsEl = document.getElementById("configControls");
+      const toggleConfigBtnEl = document.getElementById("toggleConfigBtn");
+      configControlsEl.hidden = !isConfigPanelOpen;
+      toggleConfigBtnEl.textContent = isConfigPanelOpen ? "Hide Config ▴" : "Edit Config ▾";
     }
 
     /**
@@ -1820,10 +1972,18 @@ print(" - /outputs/user_summary.csv")
       saveConfig();
     });
 
+    document.getElementById("toggleConfigBtn").addEventListener("click", () => {
+      isConfigPanelOpen = !isConfigPanelOpen;
+      renderConfigPanel();
+      fitTopPanelToContent();
+      syncEditorHeight();
+    });
+
     document.getElementById("togglePackagesBtn").addEventListener("click", () => {
       isPackagePanelOpen = !isPackagePanelOpen;
       renderSelectedPackages();
       renderPackagePanel();
+      fitTopPanelToContent();
       syncEditorHeight();
     });
 
@@ -1947,6 +2107,7 @@ print(" - /outputs/user_summary.csv")
 
     renderPackageFilters();
     renderPackageOptions();
+    renderConfigPanel();
     renderPackagePanel();
     applyConfig(getDefaultConfig());
     initCodeEditor();
