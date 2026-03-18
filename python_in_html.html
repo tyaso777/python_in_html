@@ -51,7 +51,7 @@
 
     .row {
       display: flex;
-      align-items: flex-start;
+      align-items: stretch;
     }
 
     .col {
@@ -68,9 +68,10 @@
 
     .column-resizer {
       flex: 0 0 16px;
+      align-self: stretch;
       position: relative;
       cursor: col-resize;
-      min-height: 40px;
+      min-height: 240px;
     }
 
     .column-resizer::before {
@@ -208,6 +209,37 @@
       flex-wrap: wrap;
       gap: 8px;
       align-items: center;
+    }
+
+    .package-summary-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .package-summary {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+      flex: 1 1 auto;
+    }
+
+    .package-count {
+      font-size: 13px;
+      font-weight: 600;
+      color: #222;
+    }
+
+    .package-controls {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .package-controls[hidden] {
+      display: none;
     }
 
     .package-search {
@@ -424,20 +456,28 @@
 
     <div class="config-grid">
       <div>
-        <p class="muted">Python packages</p>
-        <div class="package-toolbar">
-          <input id="packageSearch" class="package-search" type="search" placeholder="Search packages" />
-          <div class="filter-group">
-            <div class="filter-label">Level</div>
-            <div id="packageLevelFilters" class="filter-list"></div>
+        <div class="package-summary-row">
+          <div class="package-summary">
+            <p class="muted">Python packages</p>
+            <div id="packageCount" class="package-count">3 selected</div>
+            <p id="selectedPackages" class="selected-packages">Selected: numpy, pandas, matplotlib</p>
           </div>
-          <div class="filter-group">
-            <div class="filter-label">Domain</div>
-            <div id="packageDomainFilters" class="filter-list"></div>
-          </div>
+          <button id="togglePackagesBtn" type="button">Edit Packages</button>
         </div>
-        <p id="selectedPackages" class="selected-packages">Selected: -</p>
-        <div id="packageList" class="package-list"></div>
+        <div id="packageControls" class="package-controls" hidden>
+          <div class="package-toolbar">
+            <input id="packageSearch" class="package-search" type="search" placeholder="Search packages" />
+            <div class="filter-group">
+              <div class="filter-label">Level</div>
+              <div id="packageLevelFilters" class="filter-list"></div>
+            </div>
+            <div class="filter-group">
+              <div class="filter-label">Domain</div>
+              <div id="packageDomainFilters" class="filter-list"></div>
+            </div>
+          </div>
+          <div id="packageList" class="package-list"></div>
+        </div>
       </div>
 
       <div class="toolbar">
@@ -668,6 +708,7 @@ print(" - /outputs/user_summary.csv")
     let activePackageDomain = "All";
     let packageSearchQuery = "";
     let selectedPackagesState = new Set(defaultConfig.packages);
+    let isPackagePanelOpen = false;
     let isResizingColumns = false;
     let isResizingTopPanel = false;
 
@@ -736,6 +777,23 @@ print(" - /outputs/user_summary.csv")
       const minHeight = 140;
       const nextHeight = Math.max(minHeight, clientY - panelRect.top);
       topPanelEl.style.height = `${nextHeight}px`;
+      syncEditorHeight();
+    }
+
+    /**
+     * Resize the editor to fill the visible area below the top controls.
+     */
+    function syncEditorHeight() {
+      if (!codeEditor) {
+        return;
+      }
+
+      const editorEl = codeEditor.getWrapperElement();
+      const editorRect = editorEl.getBoundingClientRect();
+      const viewportPadding = 16;
+      const minHeight = 280;
+      const nextHeight = Math.max(minHeight, Math.floor(window.innerHeight - editorRect.top - viewportPadding));
+      codeEditor.setSize(null, nextHeight);
       codeEditor.refresh();
     }
 
@@ -854,8 +912,20 @@ print(" - /outputs/user_summary.csv")
      */
     function renderSelectedPackages() {
       const selectedEl = document.getElementById("selectedPackages");
+      const packageCountEl = document.getElementById("packageCount");
+      const togglePackagesBtnEl = document.getElementById("togglePackagesBtn");
       const selected = getSelectedPackages();
+      const hasHeavy = selected.some((pkgId) => PACKAGE_CATALOG.find((pkg) => pkg.id === pkgId)?.heavy);
+      packageCountEl.textContent = `${selected.length} selected${hasHeavy ? " - Heavy included" : ""}`;
       selectedEl.textContent = `Selected: ${selected.length ? selected.join(", ") : "-"}`;
+      togglePackagesBtnEl.textContent = isPackagePanelOpen ? "Close Packages" : "Edit Packages";
+    }
+
+    /**
+     * Show or hide the expanded package controls.
+     */
+    function renderPackagePanel() {
+      document.getElementById("packageControls").hidden = !isPackagePanelOpen;
     }
 
     /**
@@ -1524,6 +1594,7 @@ print(" - /outputs/user_summary.csv")
         refreshEditorDecorations();
       });
 
+      syncEditorHeight();
       updateCurrentCellInfo();
       refreshEditorDecorations();
     }
@@ -1749,6 +1820,13 @@ print(" - /outputs/user_summary.csv")
       saveConfig();
     });
 
+    document.getElementById("togglePackagesBtn").addEventListener("click", () => {
+      isPackagePanelOpen = !isPackagePanelOpen;
+      renderSelectedPackages();
+      renderPackagePanel();
+      syncEditorHeight();
+    });
+
     document.getElementById("packageLevelFilters").addEventListener("click", (event) => {
       const filterButton = event.target.closest("[data-level]");
       if (!filterButton) {
@@ -1836,6 +1914,10 @@ print(" - /outputs/user_summary.csv")
       event.currentTarget.classList.add("is-dragging");
     });
 
+    window.addEventListener("resize", () => {
+      syncEditorHeight();
+    });
+
     document.getElementById("loadConfigBtn").addEventListener("click", () => {
       document.getElementById("configFileInput").click();
     });
@@ -1865,6 +1947,7 @@ print(" - /outputs/user_summary.csv")
 
     renderPackageFilters();
     renderPackageOptions();
+    renderPackagePanel();
     applyConfig(getDefaultConfig());
     initCodeEditor();
 
