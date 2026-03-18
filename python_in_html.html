@@ -9,6 +9,13 @@
     src="https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide.js"
     integrity="sha384-Hcsv6LxK5rH9vVB+a/+cLJZR3kIIM2Y851r6waxy+9JInvSROiD1bTMk748pYdat"
     crossorigin="anonymous"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/active-line.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 
   <style>
     body {
@@ -47,17 +54,36 @@
       margin-bottom: 16px;
     }
 
-    textarea {
-      width: 100%;
-      min-height: 520px;
+    .CodeMirror {
+      height: 520px;
+      border: 1px solid #d8d8d8;
+      border-radius: 8px;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 13px;
       line-height: 1.45;
-      box-sizing: border-box;
-      tab-size: 4;
+      background: #fcfcfc;
     }
 
-    pre {
+    .CodeMirror-gutters {
+      border-right: 1px solid #ececec;
+      background: #f7f7f7;
+    }
+
+    .CodeMirror-activeline-background {
+      background: #fff7e6;
+    }
+
+    .cm-cell-separator {
+      background: linear-gradient(90deg, #ffe4b5, #fff4dd);
+      color: #8a5a00;
+      font-weight: 600;
+    }
+
+    .cm-current-cell {
+      background: #f3f8ff;
+    }
+
+    .result-console {
       white-space: pre-wrap;
       word-break: break-word;
       background: #111;
@@ -156,10 +182,6 @@
       font-size: 13px;
       margin: 0 0 8px 0;
       color: #333;
-    }
-
-    .result-console {
-      min-height: 0;
     }
 
     .result-images {
@@ -295,9 +317,12 @@ print(" - /outputs/user_summary.csv")
   <script>
     let pyodide = null;
     let sharedGlobals = null;
+    let codeEditor = null;
     let activeOperation = null;
     let operationCount = 0;
     let createdObjectUrls = [];
+    let decoratedSeparatorLines = [];
+    let decoratedCurrentCellLines = [];
 
     /** @type {Map<string, File>} */
     let currentFiles = new Map();
@@ -321,6 +346,26 @@ print(" - /outputs/user_summary.csv")
      */
     function setStatus(text) {
       document.getElementById("status").textContent = text;
+    }
+
+    /**
+     * Get the CodeMirror source text.
+     * @returns {string}
+     */
+    function getEditorSource() {
+      return codeEditor ? codeEditor.getValue() : document.getElementById("code").value;
+    }
+
+    /**
+     * Get the current editor cursor as a character index.
+     * @returns {number}
+     */
+    function getEditorCursorIndex() {
+      if (!codeEditor) {
+        return document.getElementById("code").selectionStart;
+      }
+
+      return codeEditor.indexFromPos(codeEditor.getCursor());
     }
 
     /**
@@ -690,7 +735,13 @@ print(" - /outputs/user_summary.csv")
       const cells = [];
 
       for (let i = 0; i < matches.length; i += 1) {
-        const start = matches[i].lineEnd;
+        let start = matches[i].lineEnd;
+        if (source[start] === "\r") {
+          start += 1;
+        }
+        if (source[start] === "\n") {
+          start += 1;
+        }
         const end = i + 1 < matches.length ? matches[i + 1].lineStart : source.length;
         const raw = source.slice(start, end);
         const trimmed = raw.trim();
@@ -713,7 +764,7 @@ print(" - /outputs/user_summary.csv")
      * @returns {{ code: string, start: number, end: number, index: number }[]}
      */
     function getCells() {
-      const source = document.getElementById("code").value;
+      const source = getEditorSource();
       return splitCellsWithRanges(source);
     }
 
@@ -722,12 +773,17 @@ print(" - /outputs/user_summary.csv")
      * @returns {{ code: string, start: number, end: number, index: number } | null}
      */
     function getCurrentCell() {
-      const editor = document.getElementById("code");
-      const cursorPos = editor.selectionStart;
+      const cursorPos = getEditorCursorIndex();
       const cells = getCells();
 
       for (const cell of cells) {
         if (cursorPos >= cell.start && cursorPos <= cell.end) {
+          return cell;
+        }
+      }
+
+      for (const cell of cells) {
+        if (cursorPos < cell.start) {
           return cell;
         }
       }
@@ -748,6 +804,99 @@ print(" - /outputs/user_summary.csv")
       }
 
       infoEl.textContent = `Current cell: ${cell.index + 1}`;
+    }
+
+    /**
+     * Clear line classes from previous decorations.
+     * @param {number[]} lines
+     * @param {string} className
+     */
+    function clearDecoratedLines(lines, className) {
+      if (!codeEditor) {
+        return;
+      }
+
+      for (const line of lines) {
+        codeEditor.removeLineClass(line, "background", className);
+      }
+      lines.length = 0;
+    }
+
+    /**
+     * Refresh separator and current-cell highlighting in CodeMirror.
+     */
+    function refreshEditorDecorations() {
+      if (!codeEditor) {
+        return;
+      }
+
+      clearDecoratedLines(decoratedSeparatorLines, "cm-cell-separator");
+      clearDecoratedLines(decoratedCurrentCellLines, "cm-current-cell");
+
+      const source = getEditorSource();
+      const sourceLines = source.split("\n");
+      for (let i = 0; i < sourceLines.length; i += 1) {
+        if (/^# %%.*$/.test(sourceLines[i])) {
+          codeEditor.addLineClass(i, "background", "cm-cell-separator");
+          decoratedSeparatorLines.push(i);
+        }
+      }
+
+      const currentCell = getCurrentCell();
+      if (!currentCell) {
+        return;
+      }
+
+      const cellCodeStartOffset = currentCell.code.search(/\S/);
+      const cellCodeStartIndex = cellCodeStartOffset >= 0
+        ? currentCell.start + cellCodeStartOffset
+        : currentCell.start;
+      const startLine = codeEditor.posFromIndex(cellCodeStartIndex).line;
+      const endIndex = Math.max(currentCell.start, currentCell.end - 1);
+      const endLine = codeEditor.posFromIndex(endIndex).line;
+
+      for (let line = startLine; line <= endLine; line += 1) {
+        codeEditor.addLineClass(line, "background", "cm-current-cell");
+        decoratedCurrentCellLines.push(line);
+      }
+    }
+
+    /**
+     * Initialize CodeMirror for the Python editor.
+     */
+    function initCodeEditor() {
+      const textarea = document.getElementById("code");
+      codeEditor = CodeMirror.fromTextArea(textarea, {
+        mode: "python",
+        lineNumbers: true,
+        indentUnit: 4,
+        tabSize: 4,
+        lineWrapping: false,
+        styleActiveLine: true,
+        matchBrackets: true,
+        viewportMargin: Infinity,
+        extraKeys: {
+          Tab(cm) {
+            cm.execCommand("indentMore");
+          },
+          "Shift-Tab"(cm) {
+            cm.execCommand("indentLess");
+          }
+        }
+      });
+
+      codeEditor.on("cursorActivity", () => {
+        updateCurrentCellInfo();
+        refreshEditorDecorations();
+      });
+
+      codeEditor.on("changes", () => {
+        updateCurrentCellInfo();
+        refreshEditorDecorations();
+      });
+
+      updateCurrentCellInfo();
+      refreshEditorDecorations();
     }
 
     /**
@@ -924,19 +1073,7 @@ print(" - /outputs/user_summary.csv")
       event.target.value = "";
     });
 
-    const editor = document.getElementById("code");
-
-    editor.addEventListener("click", () => {
-      updateCurrentCellInfo();
-    });
-
-    editor.addEventListener("keyup", () => {
-      updateCurrentCellInfo();
-    });
-
-    editor.addEventListener("select", () => {
-      updateCurrentCellInfo();
-    });
+    initCodeEditor();
 
     initPyodide().catch((error) => {
       const operation = createOperationCard("Initialization Failed");
