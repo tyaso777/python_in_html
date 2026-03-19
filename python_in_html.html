@@ -1007,22 +1007,32 @@ print(" - /outputs/user_summary.csv")
      */
     function setConfigPanelHeight(clientY) {
       const configPanelEl = document.getElementById("configPanel");
-      const inputPanelEl = document.getElementById("inputPanel");
-      if (!configPanelEl || !inputPanelEl) {
+      if (!configPanelEl) {
         return;
       }
 
       const panelRect = configPanelEl.getBoundingClientRect();
-      const inputPanelRect = inputPanelEl.getBoundingClientRect();
       const minHeight = 30;
-      const handleHeight = 14;
-      const stackGap = 12;
+      const minInputHeight = 88;
+      const minEditorHeight = 280;
+      const betweenHandleHeight = 8;
+      const bottomHandleHeight = 8;
+      const viewportPadding = 16;
       const maxHeight = Math.max(
         minHeight,
-        Math.floor(inputPanelRect.top - panelRect.top - handleHeight - stackGap)
+        Math.floor(
+          window.innerHeight
+            - panelRect.top
+            - minInputHeight
+            - minEditorHeight
+            - betweenHandleHeight
+            - bottomHandleHeight
+            - viewportPadding
+        )
       );
       configPanelHeight = Math.max(minHeight, Math.min(maxHeight, clientY - panelRect.top));
       configPanelEl.style.height = `${configPanelHeight}px`;
+      syncEditorHeight();
     }
 
     /**
@@ -1059,6 +1069,11 @@ print(" - /outputs/user_summary.csv")
       }
 
       if (!isConfigPanelOpen) {
+        configPanelEl.style.height = "auto";
+        return;
+      }
+
+      if (!isPackagePanelOpen) {
         configPanelEl.style.height = "auto";
         return;
       }
@@ -1247,7 +1262,16 @@ print(" - /outputs/user_summary.csv")
      * Show or hide the expanded package controls.
      */
     function renderPackagePanel() {
-      document.getElementById("packageControls").hidden = !isPackagePanelOpen;
+      const packageControlsEl = document.getElementById("packageControls");
+      const configInputResizeHandleEl = document.getElementById("configInputResizeHandle");
+      packageControlsEl.hidden = !isPackagePanelOpen;
+      configInputResizeHandleEl.hidden = !isPackagePanelOpen;
+
+      if (!isPackagePanelOpen) {
+        configPanelHeight = null;
+      }
+
+      syncConfigPanelHeight();
     }
 
     /**
@@ -2255,6 +2279,13 @@ print(" - /outputs/user_summary.csv")
     });
 
     document.getElementById("toggleConfigBtn").addEventListener("click", () => {
+      if (isConfigPanelOpen) {
+        isPackagePanelOpen = false;
+        configPanelHeight = null;
+        renderPackagePanel();
+        renderSelectedPackages();
+      }
+
       isConfigPanelOpen = !isConfigPanelOpen;
       renderConfigPanel();
       syncEditorHeight();
