@@ -23,6 +23,7 @@ downloadable outputs, package selection, and config save/load.
 
 - `python_in_html.html`: the main app
 - `docs/guide.html`: detailed in-app user guide
+- `samples/`: small sample CSV files for quick local testing
 - `tests/test_excel_read_adapter.py`: Excel compatibility tests
 - `load_tests/`: load-test scripts, configs, and generators
 
