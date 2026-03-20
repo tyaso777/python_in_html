@@ -30,6 +30,7 @@
     src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"
     integrity="sha384-LjCI3E8qhhxXZvu7+FCvqx9eZYSowFvuJ7z54KsgI/BDPGKEuysqCg/vYiKHvC4Y"
     crossorigin="anonymous"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 
   <style>
     body {
@@ -713,12 +714,18 @@
         <div class="upload-actions">
           <p class="muted">Input files</p>
           <label for="fileInput" class="file-input-label">Choose Files</label>
-          <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json" />
+          <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json,.xlsx,.xls" />
         </div>
         <div class="upload-divider" aria-hidden="true"></div>
         <div class="upload-summary">
           <p class="muted">Input files</p>
-          <div id="inputFiles" class="input-files-box">No input files selected yet.</div>
+          <div id="inputFiles" class="input-files-box">
+            <div class="muted" style="margin-bottom: 6px; font-size: 12px;">
+              Excel files are supported through the app compatibility adapter. Use pd.read_excel("/inputs/your_file.xlsx", ...).
+              <a href="./ReadMe.html#excel-compatibility" target="_blank" rel="noopener noreferrer">See ReadMe for details.</a>
+            </div>
+            <div>No input files selected yet.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -949,6 +956,7 @@ print(" - /outputs/user_summary.csv")
     let isResizingInputPanel = false;
     let configPanelHeight = null;
     let inputPanelHeight = null;
+    const excelWorkbookCache = new Map();
 
     /** @type {Map<string, File>} */
     let currentFiles = new Map();
@@ -972,6 +980,368 @@ print(" - /outputs/user_summary.csv")
      */
     function setStatus(text) {
       void text;
+    }
+
+    /**
+     * Check whether a file name should be treated as an Excel workbook.
+     * @param {string} fileName
+     * @returns {boolean}
+     */
+    function isExcelFileName(fileName) {
+      return /\.(xlsx|xls)$/i.test(fileName);
+    }
+
+    /**
+     * Parse an Excel file and cache worksheet rows for the compatibility adapter.
+     * @param {File} file
+     * @param {string} safeName
+     * @returns {Promise<string[]>}
+     */
+    async function cacheExcelWorkbook(file, safeName) {
+      const inputPath = `/inputs/${safeName}`;
+      const sheetNames = [];
+
+      if (typeof XLSX === "undefined") {
+        throw new Error("SheetJS is not available, so Excel files cannot be parsed.");
+      }
+
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const sheets = {};
+
+      for (const sheetName of workbook.SheetNames) {
+        const worksheet = workbook.Sheets[sheetName];
+        sheets[sheetName] = XLSX.utils.sheet_to_json(worksheet, {
+          header: 1,
+          defval: null,
+          raw: false,
+          blankrows: true
+        });
+        sheetNames.push(sheetName);
+      }
+
+      excelWorkbookCache.set(inputPath, {
+        inputPath,
+        fileName: safeName,
+        sheetNames,
+        sheets
+      });
+
+      return sheetNames;
+    }
+
+    /**
+     * Register the browser-side Excel adapter as a JavaScript module for Python.
+     */
+    function registerExcelAdapterModule() {
+      if (!pyodide) {
+        return;
+      }
+
+      pyodide.registerJsModule("excel_adapter", {
+        hasWorkbook(inputPath) {
+          return excelWorkbookCache.has(String(inputPath));
+        },
+        getSheetNamesJson(inputPath) {
+          const workbook = excelWorkbookCache.get(String(inputPath));
+          if (!workbook) {
+            throw new Error(`Excel workbook not found: ${inputPath}`);
+          }
+          return JSON.stringify(workbook.sheetNames);
+        },
+        getSheetJson(inputPath, sheetSpecifier) {
+          const workbook = excelWorkbookCache.get(String(inputPath));
+          if (!workbook) {
+            throw new Error(`Excel workbook not found: ${inputPath}`);
+          }
+
+          let sheetName = null;
+          if (typeof sheetSpecifier === "number") {
+            sheetName = workbook.sheetNames[sheetSpecifier] || null;
+          } else if (sheetSpecifier === null || typeof sheetSpecifier === "undefined") {
+            sheetName = workbook.sheetNames[0] || null;
+          } else {
+            sheetName = workbook.sheetNames.find((name) => name === String(sheetSpecifier)) || null;
+          }
+
+          if (!sheetName) {
+            throw new Error(`Sheet not found in ${inputPath}: ${sheetSpecifier}`);
+          }
+
+          return JSON.stringify({
+            sheet_name: sheetName,
+            rows: workbook.sheets[sheetName] || []
+          });
+        }
+      });
+    }
+
+    /**
+     * Install the pandas.read_excel compatibility adapter for cached Excel workbooks.
+     * @returns {Promise<void>}
+     */
+    async function ensureExcelReadAdapterInstalled() {
+      if (!pyodide || !loadedPackages.has("pandas")) {
+        return;
+      }
+
+      await pyodide.runPythonAsync(`
+import json
+import os
+import pandas as pd
+import excel_adapter
+
+if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
+    _python_in_html_original_read_excel = pd.read_excel
+
+    def _python_in_html_to_list(value):
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple)):
+            return list(value)
+        return [value]
+
+    def _python_in_html_to_set(value):
+        if value is None:
+            return set()
+        if isinstance(value, (set, list, tuple)):
+            return set(value)
+        return {value}
+
+    def _python_in_html_col_to_index(label):
+        label = str(label).strip().upper()
+        if not label or not label.isalpha():
+            return None
+
+        index = 0
+        for char in label:
+            index = index * 26 + (ord(char) - 64)
+        return index - 1
+
+    def _python_in_html_parse_usecols_string(spec, columns):
+        result = []
+        tokens = [token.strip() for token in str(spec).split(",") if token.strip()]
+        for token in tokens:
+            if ":" in token:
+                left, right = [part.strip() for part in token.split(":", 1)]
+                start_index = _python_in_html_col_to_index(left)
+                end_index = _python_in_html_col_to_index(right)
+                if start_index is not None and end_index is not None:
+                    for idx in range(start_index, end_index + 1):
+                        result.append(idx)
+                else:
+                    left_pos = columns.index(left)
+                    right_pos = columns.index(right)
+                    for idx in range(left_pos, right_pos + 1):
+                        result.append(columns[idx])
+            else:
+                col_index = _python_in_html_col_to_index(token)
+                result.append(col_index if col_index is not None else token)
+        return result
+
+    def _python_in_html_apply_skiprows(rows, skiprows):
+        if skiprows is None:
+            return rows
+        if isinstance(skiprows, int):
+            return rows[skiprows:]
+        if callable(skiprows):
+            return [row for idx, row in enumerate(rows) if not skiprows(idx)]
+
+        skip_indexes = _python_in_html_to_set(skiprows)
+        return [row for idx, row in enumerate(rows) if idx not in skip_indexes]
+
+    def _python_in_html_pad_rows(rows):
+        width = max((len(row) for row in rows), default=0)
+        return [list(row) + [None] * (width - len(row)) for row in rows], width
+
+    def _python_in_html_build_columns(header_rows):
+        if not header_rows:
+            return []
+        if len(header_rows) == 1:
+            return header_rows[0]
+        return pd.MultiIndex.from_arrays(header_rows)
+
+    def _python_in_html_apply_scalar_maps(df, na_values=None, true_values=None, false_values=None):
+        if na_values is not None:
+            df = df.replace(list(_python_in_html_to_set(na_values)), pd.NA)
+        if true_values is not None:
+            df = df.replace({value: True for value in _python_in_html_to_set(true_values)})
+        if false_values is not None:
+            df = df.replace({value: False for value in _python_in_html_to_set(false_values)})
+        return df
+
+    def _python_in_html_apply_usecols(df, usecols):
+        if usecols is None:
+            return df
+        if callable(usecols):
+            return df.loc[:, [col for col in df.columns if usecols(col)]]
+        if isinstance(usecols, str):
+            usecols = _python_in_html_parse_usecols_string(usecols, list(df.columns))
+        selected = []
+        for item in _python_in_html_to_list(usecols):
+            if isinstance(item, int):
+                selected.append(df.columns[item])
+            else:
+                selected.append(item)
+        return df.loc[:, selected]
+
+    def _python_in_html_apply_parse_dates(df, parse_dates):
+        if parse_dates in (None, False):
+            return df
+        if parse_dates is True:
+            for col in df.columns:
+                try:
+                    df[col] = pd.to_datetime(df[col])
+                except Exception:
+                    pass
+            return df
+        if isinstance(parse_dates, dict):
+            for target, source in parse_dates.items():
+                source_cols = _python_in_html_to_list(source)
+                combined = df[source_cols].astype(str).agg(" ".join, axis=1)
+                df[target] = pd.to_datetime(combined, errors="coerce")
+            return df
+
+        for col in _python_in_html_to_list(parse_dates):
+            target = df.columns[col] if isinstance(col, int) else col
+            df[target] = pd.to_datetime(df[target], errors="coerce")
+        return df
+
+    def _python_in_html_apply_dtype(df, dtype):
+        if dtype is None:
+            return df
+        return df.astype(dtype)
+
+    def _python_in_html_excel_to_df(
+        path,
+        sheet_name,
+        header=0,
+        names=None,
+        index_col=None,
+        usecols=None,
+        skiprows=None,
+        nrows=None,
+        dtype=None,
+        parse_dates=False,
+        na_values=None,
+        true_values=None,
+        false_values=None,
+    ):
+        payload = json.loads(excel_adapter.getSheetJson(path, sheet_name))
+        rows = payload["rows"] or []
+        rows = _python_in_html_apply_skiprows(rows, skiprows)
+        rows, width = _python_in_html_pad_rows(rows)
+
+        if header is None:
+            data_rows = rows
+            df = pd.DataFrame(data_rows)
+        else:
+            header_indexes = _python_in_html_to_list(header)
+            header_rows = []
+            for header_index in header_indexes:
+                if header_index >= len(rows):
+                    raise ValueError(f"Header row index out of range: {header_index}")
+                header_rows.append(rows[header_index])
+
+            columns = _python_in_html_build_columns(header_rows)
+            data_start = max(header_indexes) + 1 if header_indexes else 0
+            data_rows = rows[data_start:]
+            df = pd.DataFrame(data_rows, columns=columns)
+
+        if nrows is not None:
+            df = df.iloc[:nrows].copy()
+
+        if names is not None:
+            df.columns = names
+
+        df = _python_in_html_apply_usecols(df, usecols)
+        df = _python_in_html_apply_scalar_maps(df, na_values=na_values, true_values=true_values, false_values=false_values)
+        df = _python_in_html_apply_parse_dates(df, parse_dates)
+        df = _python_in_html_apply_dtype(df, dtype)
+
+        if index_col is not None:
+            index_keys = []
+            for item in _python_in_html_to_list(index_col):
+                index_keys.append(df.columns[item] if isinstance(item, int) else item)
+            df = df.set_index(index_keys)
+
+        return df
+
+    def _python_in_html_read_excel(io, sheet_name=0, *args, **kwargs):
+        path = os.fspath(io) if hasattr(io, "__fspath__") else str(io)
+
+        if not excel_adapter.hasWorkbook(path):
+            return _python_in_html_original_read_excel(io, sheet_name=sheet_name, *args, **kwargs)
+
+        unsupported = [key for key in kwargs if key not in {
+            "engine",
+            "header",
+            "names",
+            "index_col",
+            "usecols",
+            "skiprows",
+            "nrows",
+            "dtype",
+            "parse_dates",
+            "na_values",
+            "true_values",
+            "false_values",
+        }]
+
+        if unsupported:
+            raise NotImplementedError(
+                "Excel compatibility mode supports sheet_name, engine, header, names, index_col, usecols, skiprows, nrows, dtype, parse_dates, na_values, true_values, and false_values. "
+                f"Unsupported arguments: {', '.join(unsupported)}"
+            )
+
+        option_names = [
+            "header",
+            "names",
+            "index_col",
+            "usecols",
+            "skiprows",
+            "nrows",
+            "dtype",
+            "parse_dates",
+            "na_values",
+            "true_values",
+            "false_values",
+        ]
+        options = {
+            "header": 0,
+            "names": None,
+            "index_col": None,
+            "usecols": None,
+            "skiprows": None,
+            "nrows": None,
+            "dtype": None,
+            "parse_dates": False,
+            "na_values": None,
+            "true_values": None,
+            "false_values": None,
+        }
+
+        for idx, value in enumerate(args):
+            if idx >= len(option_names):
+                raise NotImplementedError("Excel compatibility mode received too many positional arguments.")
+            options[option_names[idx]] = value
+
+        for key, value in kwargs.items():
+            if key == "engine":
+                continue
+            options[key] = value
+
+        if sheet_name is None:
+            result = {}
+            for current_sheet_name in json.loads(excel_adapter.getSheetNamesJson(path)):
+                result[current_sheet_name] = _python_in_html_excel_to_df(path, current_sheet_name, **options)
+            return result
+
+        return _python_in_html_excel_to_df(path, sheet_name, **options)
+
+    _python_in_html_read_excel._python_in_html_excel_adapter = True
+    pd.read_excel = _python_in_html_read_excel
+`);
     }
 
     /**
@@ -1400,7 +1770,61 @@ print(" - /outputs/user_summary.csv")
      * @returns {string}
      */
     function sanitizeFileName(fileName) {
-      return fileName.replace(/[^\w.\-]/g, "_");
+      return fileName
+        .replace(/[\/\\]/g, "_")
+        .replace(/[\u0000-\u001f\u007f]/g, "_");
+    }
+
+    /**
+     * Build the internal input path from a sanitized name.
+     * @param {string} safeName
+     * @returns {string}
+     */
+    function getInputPath(safeName) {
+      return `/inputs/${safeName}`;
+    }
+
+    /**
+     * Format a user-facing input file label while keeping the internal path visible.
+     * @param {File} file
+     * @param {string} safeName
+     * @returns {string}
+     */
+    function formatInputFileLabel(file, safeName) {
+      const inputPath = getInputPath(safeName);
+      if (file.name === safeName) {
+        return `${inputPath} (${file.size} bytes)`;
+      }
+
+      return `${file.name} -> ${inputPath} (${file.size} bytes)`;
+    }
+
+    /**
+     * Create the shared Excel compatibility note shown above the input list.
+     * @returns {HTMLDivElement}
+     */
+    function createExcelSummaryNoteElement() {
+      const noteEl = document.createElement("div");
+      noteEl.className = "muted";
+      noteEl.style.marginBottom = "6px";
+      noteEl.style.fontSize = "12px";
+
+      noteEl.append("Excel files are supported through the app compatibility adapter. Use ");
+
+      const codeEl = document.createElement("code");
+      codeEl.textContent = 'pd.read_excel("/inputs/your_file.xlsx", ...)';
+      noteEl.appendChild(codeEl);
+
+      noteEl.append(". ");
+
+      const linkEl = document.createElement("a");
+      linkEl.href = "./ReadMe.html#excel-compatibility";
+      linkEl.target = "_blank";
+      linkEl.rel = "noopener noreferrer";
+      linkEl.textContent = "See ReadMe for details.";
+      noteEl.appendChild(linkEl);
+
+      return noteEl;
     }
 
     /**
@@ -1444,8 +1868,12 @@ print(" - /outputs/user_summary.csv")
       const el = document.getElementById("inputFiles");
       el.innerHTML = "";
 
+      el.appendChild(createExcelSummaryNoteElement());
+
       if (currentFiles.size === 0) {
-        el.textContent = "No input files selected yet.";
+        const emptyNote = document.createElement("div");
+        emptyNote.textContent = "No input files selected yet.";
+        el.appendChild(emptyNote);
         return;
       }
 
@@ -1453,9 +1881,11 @@ print(" - /outputs/user_summary.csv")
 
       for (const [safeName, file] of currentFiles.entries()) {
         const li = document.createElement("li");
+        const inputPath = getInputPath(safeName);
+        const excelWorkbook = excelWorkbookCache.get(inputPath);
 
         const nameSpan = document.createElement("span");
-        nameSpan.textContent = `/inputs/${safeName} `;
+        nameSpan.textContent = `${file.name} `;
         li.appendChild(nameSpan);
 
         const sizeSpan = document.createElement("span");
@@ -1470,12 +1900,29 @@ print(" - /outputs/user_summary.csv")
         deleteBtn.style.marginLeft = "8px";
         deleteBtn.addEventListener("click", () => {
           currentFiles.delete(safeName);
+          excelWorkbookCache.delete(inputPath);
           renderInputFiles();
 
           const operation = createOperationCard("Delete File", { includeConsole: false });
-          appendTextListSection(operation.bodyEl, "Deleted Files", [`/inputs/${safeName}`]);
+          appendTextListSection(operation.bodyEl, "Deleted Files", [formatInputFileLabel(file, safeName)]);
         });
         li.appendChild(deleteBtn);
+
+        const pathEl = document.createElement("div");
+        pathEl.className = "muted";
+        pathEl.style.marginTop = "4px";
+        pathEl.style.fontSize = "12px";
+        pathEl.textContent = `Internal path: ${inputPath}`;
+        li.appendChild(pathEl);
+
+        if (excelWorkbook) {
+          const sheetsEl = document.createElement("div");
+          sheetsEl.className = "muted";
+          sheetsEl.style.marginTop = "4px";
+          sheetsEl.style.fontSize = "12px";
+          sheetsEl.textContent = `Detected sheets: ${excelWorkbook.sheetNames.join(", ") || "(none)"}`;
+          li.appendChild(sheetsEl);
+        }
 
         list.appendChild(li);
       }
@@ -2085,6 +2532,7 @@ print(" - /outputs/user_summary.csv")
       const pyPaths = pyodide.toPy(inputPaths);
       pyodide.globals.set("input_paths", pyPaths);
       pyPaths.destroy();
+      await ensureExcelReadAdapterInstalled();
     }
 
     /**
@@ -2165,13 +2613,18 @@ print(" - /outputs/user_summary.csv")
      * If the same sanitized file name already exists, replace it.
      * @param {FileList | File[]} files
      */
-    function setFiles(files) {
+    async function setFiles(files) {
       const addedFiles = [];
 
       for (const file of Array.from(files)) {
         const safeName = sanitizeFileName(file.name);
+        const inputPath = getInputPath(safeName);
+        excelWorkbookCache.delete(inputPath);
         currentFiles.set(safeName, file);
-        addedFiles.push(`/inputs/${safeName} (${file.size} bytes)`);
+        addedFiles.push(formatInputFileLabel(file, safeName));
+        if (isExcelFileName(safeName)) {
+          await cacheExcelWorkbook(file, safeName);
+        }
       }
 
       renderInputFiles();
@@ -2191,6 +2644,7 @@ print(" - /outputs/user_summary.csv")
       pyodide = await loadPyodide({
         indexURL: "https://cdn.jsdelivr.net/pyodide/v0.29.3/full/"
       });
+      registerExcelAdapterModule();
 
       pyodide.setStdout({
         batched: (msg) => appendConsole(msg + "\n")
@@ -2427,7 +2881,11 @@ print(" - /outputs/user_summary.csv")
     });
 
     document.getElementById("fileInput").addEventListener("change", (event) => {
-      setFiles(event.target.files || []);
+      setFiles(event.target.files || []).catch((error) => {
+        const operation = createOperationCard("Choose Files Failed");
+        operation.consoleEl.textContent = String(error) + "\n";
+        setStatus("Failed.");
+      });
       event.target.value = "";
     });
 

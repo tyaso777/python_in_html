@@ -177,7 +177,7 @@
       <h2>3. Input Files</h2>
       <p>
         Input files are selected with the <code>Choose Files</code> button.
-        Supported file types in the current UI are <code>.csv</code>, <code>.json</code>, and <code>.txt</code>.
+        Supported file types in the current UI are <code>.csv</code>, <code>.json</code>, <code>.txt</code>, <code>.xlsx</code>, and <code>.xls</code>.
       </p>
       <p>
         Selected files are stored in the browser-side virtual file system under:
@@ -192,6 +192,33 @@ df = pd.read_csv("/inputs/sample_user.csv")</code></pre>
       <div class="warn">
         File names must match exactly.
         For example, <code>sample_user.csv</code> and <code>sample-user.csv</code> are different names.
+      </div>
+
+      <h3 id="excel-compatibility">Excel Compatibility Mode</h3>
+      <p>
+        Excel files are supported through the app compatibility adapter.
+        After you choose an <code>.xlsx</code> or <code>.xls</code> file, use its internal path under <code>/inputs/</code> with <code>pd.read_excel(...)</code>.
+      </p>
+      <p>
+        This app runs fully in the browser with Pyodide.
+        In this environment, the usual desktop-style pandas Excel backend is not used directly, so Excel workbooks are parsed on the JavaScript side first and then exposed to Python through a <code>pd.read_excel(...)</code>-compatible adapter.
+        That is why common usage works, while some advanced cases can still differ from native desktop pandas.
+      </p>
+      <pre><code>import pandas as pd
+
+df = pd.read_excel("/inputs/祝日.xlsx", sheet_name=0)
+all_sheets = pd.read_excel("/inputs/祝日.xlsx", sheet_name=None)</code></pre>
+      <p>
+        The adapter is designed to follow common <code>pandas.read_excel</code> usage for local browser work.
+      </p>
+      <ul>
+        <li>Supported patterns include <code>sheet_name</code>, <code>header</code>, <code>names</code>, <code>index_col</code>, <code>usecols</code>, <code>skiprows</code>, <code>nrows</code>, <code>dtype</code>, <code>parse_dates</code>, <code>na_values</code>, <code>true_values</code>, and <code>false_values</code></li>
+        <li><code>sheet_name=None</code> returns a <code>dict</code> keyed by sheet name, matching normal pandas behavior</li>
+        <li>The <strong>Input files</strong> panel shows the internal path used by Python</li>
+      </ul>
+      <div class="note">
+        This is compatibility mode, not the native pandas Excel engine.
+        Most common workflows should work, but some advanced <code>read_excel</code> options may still differ from desktop pandas.
       </div>
     </div>
 
@@ -373,6 +400,7 @@ print(os.listdir("/outputs"))</code></pre>
         <li>Only files under <code>/inputs/</code> are treated as input files</li>
         <li>Only files under <code>/outputs/</code> appear as generated results</li>
         <li>Package choices are limited to the built-in allowlist defined by this app</li>
+        <li>Excel loading uses the app compatibility adapter rather than the native pandas Excel backend</li>
       </ul>
     </div>
 
@@ -400,6 +428,12 @@ print(os.listdir("/inputs"))</code></pre>
       <h3>Load Config does not restore a package</h3>
       <p>
         Only packages included in the app's allowlist are restored from config files.
+      </p>
+
+      <h3>Excel results do not match desktop pandas exactly</h3>
+      <p>
+        Check the <a href="#excel-compatibility">Excel Compatibility Mode</a> section.
+        This app supports common <code>read_excel</code> usage, but some advanced cases can still differ from native pandas.
       </p>
     </div>
 
