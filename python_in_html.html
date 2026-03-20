@@ -154,7 +154,8 @@
       color: #eee;
       padding: 12px;
       border-radius: 6px;
-      min-height: 220px;
+      min-height: 0;
+      max-height: 320px;
       overflow: auto;
       margin: 0;
     }
@@ -807,6 +808,7 @@ print(" - /outputs/user_summary.csv")
     <div class="col results-col">
       <div class="panel">
         <h2>Operation Results</h2>
+        <p class="muted">Save files to <code>/outputs/</code> to show images and downloads here. <a href="./ReadMe.html#output-files" target="_blank" rel="noopener noreferrer">See ReadMe for details.</a></p>
         <div id="resultHistory" class="history">
           <div id="resultHistoryEmpty" class="history-empty">No operations yet.</div>
         </div>
@@ -1785,6 +1787,28 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
     }
 
     /**
+     * Format a byte size using a compact binary unit.
+     * @param {number} bytes
+     * @returns {string}
+     */
+    function formatFileSize(bytes) {
+      if (!Number.isFinite(bytes) || bytes < 1024) {
+        return `${bytes} B`;
+      }
+
+      const units = ["KB", "MB", "GB", "TB"];
+      let value = bytes;
+      let unitIndex = -1;
+      while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex += 1;
+      }
+
+      const decimals = value >= 100 ? 0 : value >= 10 ? 1 : 2;
+      return `${value.toFixed(decimals)} ${units[unitIndex]}`;
+    }
+
+    /**
      * Format a user-facing input file label while keeping the internal path visible.
      * @param {File} file
      * @param {string} safeName
@@ -1793,10 +1817,10 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
     function formatInputFileLabel(file, safeName) {
       const inputPath = getInputPath(safeName);
       if (file.name === safeName) {
-        return `${inputPath} (${file.size} bytes)`;
+        return `${inputPath} (${formatFileSize(file.size)})`;
       }
 
-      return `${file.name} -> ${inputPath} (${file.size} bytes)`;
+      return `${file.name} -> ${inputPath} (${formatFileSize(file.size)})`;
     }
 
     /**
@@ -1889,7 +1913,7 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
         li.appendChild(nameSpan);
 
         const sizeSpan = document.createElement("span");
-        sizeSpan.textContent = `(${file.size} bytes) `;
+        sizeSpan.textContent = `(${formatFileSize(file.size)}) `;
         sizeSpan.style.color = "#666";
         li.appendChild(sizeSpan);
 
