@@ -568,6 +568,53 @@ class ExcelReadAdapterTests(unittest.TestCase):
         self.assertEqual(df.to_rows()[0], ["meta", "version1", None])
         self.assertEqual(df.to_rows()[2], [1, 2, 3])
 
+    def test_combined_skiprows_and_header(self):
+        df = self.read_excel("/inputs/skiprows_cases.xlsx", skiprows=2, header=0, nrows=2)
+        self.assertEqual(df.columns, ["id", "name", "score"])
+        self.assertEqual(df.to_rows(), [[1, "Alice", 91], [2, "Bob", 88]])
+
+    def test_combined_usecols_and_names(self):
+        df = self.read_excel(
+            "/inputs/usecols_cases.xlsx",
+            names=["a_value", "b_value", "c_value", "d_value", "e_value"],
+            usecols=["b_value", "d_value"],
+        )
+        self.assertEqual(df.columns, ["b_value", "d_value"])
+        self.assertEqual(df.to_rows()[0], [2, 4])
+
+    def test_combined_usecols_and_index_col(self):
+        df = self.read_excel(
+            "/inputs/index_and_names.xlsx",
+            usecols=["region", "store", "sales"],
+            index_col=[0, 1],
+        )
+        self.assertEqual(df.columns, ["region", "store", "sales"])
+        self.assertEqual(df.index_keys, ["region", "store"])
+        self.assertEqual(df.to_rows()[1], ["East", "B", 120])
+
+    def test_combined_na_values_and_parse_dates(self):
+        df = self.read_excel(
+            "/inputs/dates_and_na.xlsx",
+            na_values=[None, "missing"],
+            parse_dates=["event_date", "end_date"],
+        )
+        self.assertEqual(df.to_rows()[1], ["dt:2025-02-01", "dt:<NA>", "N", "<NA>"])
+
+    def test_combined_header_none_names_and_nrows(self):
+        df = self.read_excel(
+            "/inputs/header_none_cases.xlsx",
+            header=None,
+            names=["kind", "value_a", "value_b"],
+            nrows=2,
+        )
+        self.assertEqual(df.columns, ["kind", "value_a", "value_b"])
+        self.assertEqual(df.to_rows(), [["meta", "version1", None], ["alpha", "beta", "gamma"]])
+
+    def test_combined_sheet_name_none_and_parse_dates(self):
+        result = self.read_excel("/inputs/dates_and_na.xlsx", sheet_name=None, parse_dates=["event_date"])
+        self.assertEqual(set(result.keys()), {"DatesNA"})
+        self.assertEqual(result["DatesNA"].to_rows()[0][0], "dt:2025-01-01")
+
     def test_fixture_book_workbook_matches_expected_rows(self):
         workbook = load_fixture_workbook(FIXTURES_DIR / "book.xlsx")
         self.assertEqual(workbook, self.workbooks["/inputs/book.xlsx"])
