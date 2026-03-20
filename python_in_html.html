@@ -654,7 +654,7 @@
 <body>
   <div class="page-header">
     <h1>Python in HTML</h1>
-    <a class="header-link" href="./docs/guide.html" target="_blank" rel="noopener noreferrer">ReadMe</a>
+    <a class="header-link" href="./docs/guide.html" target="_blank" rel="noopener noreferrer">User Guide</a>
   </div>
 
   <div class="top-stack">
@@ -723,7 +723,7 @@
           <div id="inputFiles" class="input-files-box">
             <div class="muted" style="margin-bottom: 6px; font-size: 12px;">
               Excel files are supported through the app compatibility adapter. Use pd.read_excel("/inputs/your_file.xlsx", ...).
-              <a href="./docs/guide.html#excel-compatibility" target="_blank" rel="noopener noreferrer">See ReadMe for details.</a>
+              <a href="./docs/guide.html#excel-compatibility" target="_blank" rel="noopener noreferrer">See User Guide for details.</a>
             </div>
             <div>No input files selected yet.</div>
           </div>
@@ -808,7 +808,7 @@ print(" - /outputs/user_summary.csv")
     <div class="col results-col">
       <div class="panel">
         <h2>Operation Results</h2>
-        <p class="muted">Save files to <code>/outputs/</code> to show images and downloads here. <a href="./docs/guide.html#output-files" target="_blank" rel="noopener noreferrer">See ReadMe for details.</a></p>
+        <p class="muted">Save files to <code>/outputs/</code> to show images and downloads here. <a href="./docs/guide.html#output-files" target="_blank" rel="noopener noreferrer">See User Guide for details.</a></p>
         <div id="resultHistory" class="history">
           <div id="resultHistoryEmpty" class="history-empty">No operations yet.</div>
         </div>
@@ -1845,7 +1845,7 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
       linkEl.href = "./docs/guide.html#excel-compatibility";
       linkEl.target = "_blank";
       linkEl.rel = "noopener noreferrer";
-      linkEl.textContent = "See ReadMe for details.";
+      linkEl.textContent = "See User Guide for details.";
       noteEl.appendChild(linkEl);
 
       return noteEl;
