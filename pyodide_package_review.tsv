@@ -15,7 +15,7 @@ astropy_iers_data	0.2025.3.10.0.29.26	Not included	Specialized scientific use	Re
 asttokens	3.0.0	Not included	Internal analysis helper, not end-user facing	Not recommended
 async-timeout	5.0.1	Not included	Async timeout helper	Exclude for now
 atomicwrites	1.4.1	Not included	File-writing helper with limited value in the browser	Not recommended
-attrs	25.2.0	Not included	Lightweight class definition helper	Add candidate
+attrs	25.2.0	Included	Lightweight class definition helper	Keep
 audioop-lts	0.2.1	Not included	Image/media processing	Review Later
 autograd	1.7.0	Included	Automatic differentiation	Keep
 awkward-cpp	47	Not included	Low-level building block, not suitable as a standalone picker item	Not recommended
@@ -32,7 +32,7 @@ bokeh	3.6.3	Included	Interactive visualization	Keep
 boost-histogram	1.6.1	Included	High-performance histogramming	Keep
 Bottleneck	1.6.0	Included	NumPy/pandas acceleration helper	Keep
 brotli	1.2.0	Not included	Internal compression component with low picker value	Not recommended
-cachetools	5.5.2	Not included	Caching helper	Add candidate
+cachetools	5.5.2	Included	Caching helper	Keep
 Cartopy	0.25.0	Included	Map rendering	Keep
 casadi	3.7.0	Not included	Highly specialized mathematical optimization package	Not recommended
 cbor-diag	1.0.1	Not included	Limited use case, not aimed at general users	Not recommended
@@ -40,12 +40,12 @@ certifi	2026.1.4	Not included	CA certificate bundle	Exclude for now
 cffi	1.17.1	Not included	C interop foundation	Exclude for now
 cffi_example	0.1	Not included	Example package, not meant for real use	Not recommended
 cftime	1.6.4.post1	Included	Scientific date/time handling	Keep
-charset-normalizer	3.4.4	Not included	Character encoding detection	Add candidate
+charset-normalizer	3.4.4	Included	Character encoding detection	Keep
 clarabel	0.11.0	Included	Optimization solver	Keep
-click	8.3.1	Not included	CLI utility	Add candidate
+click	8.3.1	Included	CLI utility	Keep
 cligj	0.7.2	Not included	CLI helper, not a good browser picker target	Not recommended
 clingo	5.8.0	Not included	Specialized logic-programming package	Not recommended
-cloudpickle	3.1.1	Not included	Advanced serialization	Add candidate
+cloudpickle	3.1.1	Included	Advanced serialization	Keep
 cmyt	2.0.2	Not included	Limited use case with low priority for general users	Not recommended
 cobs	1.2.1	Not included	Specialized byte-encoding package, not for general users	Not recommended
 colorspacious	1.1.2	Included	Color space conversion	Keep
@@ -53,12 +53,12 @@ contourpy	1.3.1	Included	Contour generation	Keep
 coolprop	7.2.0	Included	Thermophysical property calculations	Keep
 coverage	7.6.12	Not included	Code coverage measurement	Exclude for now
 cramjam	2.10.0rc1	Not included	Mostly an internal compression helper with low standalone value	Not recommended
-crc32c	2.7.1	Not included	Checksum calculation	Add candidate
+crc32c	2.7.1	Included	Checksum calculation	Keep
 cryptography	46.0.3	Not included	Cryptography foundation	Exclude for now
 css-inline	0.16.0	Included	Inline CSS for HTML	Keep
 cssselect	1.3.0	Included	CSS selector evaluation	Keep
 cvxpy-base	1.6.3	Included	Convex optimization modeling	Keep
-cycler	0.12.1	Not included	Plot styling helper	Add candidate
+cycler	0.12.1	Included	Plot styling helper	Keep
 cysignals	1.12.3	Not included	Low-level dependency, not suitable for end users	Not recommended
 cytoolz	1.0.1	Not included	Acceleration helper with weak standalone value	Not recommended
 decorator	5.2.1	Included	Decorator helper	Keep
@@ -67,7 +67,7 @@ deprecation	2.1.0	Not included	Primarily an internal helper, not well suited to 
 diskcache	5.6.3	Not included	Limited benefit with the browser virtual FS and potentially confusing	Not recommended
 distlib	0.3.9	Not included	Distribution infrastructure package, not end-user facing	Not recommended
 distro	1.9.0	Not included	OS detection package with low browser-side value	Not recommended
-docutils	0.21.2	Not included	reStructuredText processing	Add candidate
+docutils	0.21.2	Included	reStructuredText processing	Keep
 donfig	0.8.1.post1	Not included	Configuration helper with low standalone value	Not recommended
 ewah_bool_utils	1.2.2	Not included	Low-level utility, not suitable for general users	Not recommended
 exceptiongroup	1.2.2	Not included	Close to an internal helper, low value as a picker option	Not recommended
@@ -76,7 +76,7 @@ fastapi	0.116.1	Not included	Web API framework	Exclude for now
 fastcan	0.5.0	Not included	Limited use case with low priority for general users	Not recommended
 fastparquet	2024.11.0	Included	Parquet I/O	Keep
 fiona	1.9.5	Included	Vector geodata I/O	Keep
-fonttools	4.56.0	Not included	Font processing	Add candidate
+fonttools	4.56.0	Included	Font processing	Keep
 freesasa	2.2.1	Not included	Specialized molecular science package	Not recommended
 frozenlist	1.6.0	Not included	Primarily an internal dependency with low standalone value	Not recommended
 fsspec	2025.3.2	Included	Filesystem abstraction	Keep
@@ -84,7 +84,7 @@ future	1.0.0	Not included	Compatibility-focused package with low value for new u
 galpy	1.10.2	Included	Galactic dynamics	Keep
 geopandas	1.1.1	Included	Geospatial tabular analysis	Keep
 gmpy2	2.1.5	Included	High-precision arithmetic	Keep
-google-crc32c	1.8.0	Not included	CRC32C calculation	Add candidate
+google-crc32c	1.8.0	Included	CRC32C calculation	Keep
 gsw	3.6.19	Not included	Specialized ocean science package	Not recommended
 h11	0.14.0	Not included	Internal HTTP/1.1 implementation	Exclude for now
 h3	4.2.2	Included	Hexagonal geospatial indexing	Keep
@@ -94,7 +94,7 @@ highspy	1.11.0	Included	Linear optimization solver	Keep
 html5lib	1.1	Included	Standards-compliant HTML parser	Keep
 httpcore	1.0.7	Not included	HTTP foundation library	Exclude for now
 httpx	0.28.1	Not included	HTTP client	Exclude for now
-idna	3.1	Not included	IDN string handling	Add candidate
+idna	3.1	Included	IDN string handling	Keep
 igraph	0.11.8	Included	Graph analysis	Keep
 imageio	2.37.0	Included	Image reading and writing	Keep
 imgui-bundle	1.92.4	Not included	Unrelated to the app's current purpose and adds UI complexity	Not recommended
@@ -106,19 +106,19 @@ jedi	0.19.2	Not included	Completion foundation not actually used by the current 
 Jinja2	3.1.6	Included	Template rendering	Keep
 jiter	0.9.0	Not included	Internal acceleration component with little standalone value	Not recommended
 joblib	1.4.2	Included	Caching and model persistence	Keep
-jsonpatch	1.33	Not included	JSON patch application	Add candidate
-jsonpointer	3.0.0	Not included	JSON Pointer processing	Add candidate
-jsonschema	4.23.0	Not included	JSON Schema validation	Add candidate
-jsonschema_specifications	2024.10.1	Not included	Configuration/serialization processing	Add candidate
-kiwisolver	1.4.8	Not included	Constraint solver / plotting helper	Add candidate
+jsonpatch	1.33	Included	JSON patch application	Keep
+jsonpointer	3.0.0	Included	JSON Pointer processing	Keep
+jsonschema	4.23.0	Included	JSON Schema validation	Keep
+jsonschema_specifications	2024.10.1	Included	Configuration/serialization processing	Keep
+kiwisolver	1.4.8	Included	Constraint solver / plotting helper	Keep
 lakers-python	0.6.0	Not included	Limited use case, not suitable for general users	Not recommended
 lazy_loader	0.4	Included	Lazy import helper	Keep
 lazy-object-proxy	1.10.0	Not included	Close to an internal helper, low value as a picker option	Not recommended
 libcst	1.6.0	Included	Python concrete syntax tree editing	Keep
 lightgbm	4.6.0	Included	Gradient boosting	Keep
-logbook	1.8.0	Not included	Logging helper	Add candidate
+logbook	1.8.0	Included	Logging helper	Keep
 lxml	6.0.2	Included	XML/HTML processing	Keep
-lz4	4.4.5	Not included	High-speed compression	Add candidate
+lz4	4.4.5	Included	High-speed compression	Keep
 MarkupSafe	3.0.2	Included	Safe string handling for templates	Keep
 matplotlib	3.8.4	Included	Static plotting	Keep
 matplotlib-inline	0.2.1	Not included	Notebook-oriented and does not fit the app's current display model	Not recommended
@@ -128,7 +128,7 @@ ml_dtypes	0.5.4	Not included	Auxiliary ML dependency with low standalone value	N
 mmh3	5.1.0	Not included	Niche hashing use case with low priority	Not recommended
 more-itertools	10.6.0	Not included	Useful, but low value as a standalone addition	Not recommended
 mpmath	1.3.0	Not included	Primarily an internal helper for SymPy	Not recommended
-msgpack	1.1.2	Not included	MessagePack serialization	Add candidate
+msgpack	1.1.2	Included	MessagePack serialization	Keep
 msgspec	0.19.0	Not included	High-performance package with weak appeal for general users	Not recommended
 msprime	1.3.3	Not included	Specialized population genetics package	Not recommended
 multidict	6.7.0	Not included	Internal HTTP dependency with low standalone value	Not recommended
@@ -147,7 +147,7 @@ numpy	2.2.5	Included	Core numerical computing	Keep
 openai	1.68.2	Not included	OpenAI API client	Exclude for now
 opencv-python	4.11.0.86	Included	Computer vision	Keep
 optlang	1.8.3	Not included	Specialized modeling helper, not suitable for general users	Not recommended
-orjson	3.10.16	Not included	High-performance JSON processing	Add candidate
+orjson	3.10.16	Included	High-performance JSON processing	Keep
 packaging	24.2	Not included	Version/requirement parsing	Review Later
 pandas	2.3.3	Included	Core tabular data processing	Keep
 parso	0.8.4	Not included	Built-in package that still needs review	Review Later
@@ -220,7 +220,7 @@ rich	13.9.4	Not included	Rich text output	Review Later
 river	0.22.0	Not included	Online learning is interesting but the user base is limited	Not recommended
 RobotRaconteur	1.2.7	Not included	Built-in package that still needs review	Review Later
 rpds-py	0.30.0	Not included	Built-in package that still needs review	Review Later
-ruamel.yaml	0.18.10	Not included	YAML processing	Add candidate
+ruamel.yaml	0.18.10	Included	YAML processing	Keep
 rustworkx	0.17.1	Not included	For graph work, networkx is sufficient in many cases	Not recommended
 scikit-image	0.25.2	Included	Image analysis	Keep
 scikit-learn	1.7.0	Included	Machine learning	Keep
@@ -228,7 +228,7 @@ scipy	1.14.1	Included	Scientific computing	Keep
 screed	1.1.3	Not included	Built-in package that still needs review	Review Later
 setuptools	76.0.0	Not included	Auxiliary utility	Review Later
 shapely	2.0.7	Included	Geometry operations	Keep
-simplejson	3.20.1	Not included	JSON processing helper	Add candidate
+simplejson	3.20.1	Included	JSON processing helper	Keep
 sisl	0.16.2	Not included	Built-in package that still needs review	Review Later
 six	1.17.0	Not included	Compatibility-focused package, not aimed at new users	Not recommended
 smart-open	7.1.0	Not included	Storage-transparent I/O	Exclude for now
@@ -267,7 +267,7 @@ tskit	1.0.0	Not included	Specialized population genetics package	Not recommended
 typing-extensions	4.15.0	Not included	Built-in package that still needs review	Review Later
 typing-inspection	0.4.2	Not included	Built-in package that still needs review	Review Later
 tzdata	2025.3	Not included	Timezone definition data with low standalone value	Not recommended
-ujson	5.11.0	Not included	High-performance JSON processing	Add candidate
+ujson	5.11.0	Included	High-performance JSON processing	Keep
 uncertainties	3.2.2	Not included	Niche uncertainty math package	Not recommended
 unyt	3.0.3	Not included	Specialized unit-aware computation package	Not recommended
 urllib3	2.5.0	Not included	HTTP-oriented and outside the app's intended scope	Not recommended
@@ -278,7 +278,7 @@ webencodings	0.5.1	Not included	Internal HTML parser helper with low standalone 
 wordcloud	1.9.4	Included	Word cloud visualization	Keep
 wrapt	1.17.2	Not included	Mostly an internal helper with little standalone picker value	Not recommended
 xarray	2025.12.0	Included	Labeled multidimensional arrays	Keep
-xgboost	2.1.4	Included	Gradient boostingMachine learning	Keep
+xgboost	2.1.4	Included	Gradient boosting machine learning	Keep
 xlrd	2.0.1	Not included	Legacy Excel-reading package that is slightly off the current direction	Not recommended
 xxhash	3.5.0	Not included	Fast hashing package with weak standalone appeal	Not recommended
 xyzservices	2025.1.0	Not included	Map tile helper with low standalone value	Not recommended
