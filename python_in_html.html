@@ -860,7 +860,10 @@ print(" - /outputs/user_summary.csv")
       { id: "css-inline", label: "css-inline", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "Inline CSS for HTML documents" },
       { id: "bleach", label: "bleach", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "HTML sanitization" },
       { id: "MarkupSafe", label: "MarkupSafe", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "Safe string handling for templates" },
+      { id: "pyyaml", label: "PyYAML", level: "Standard", domains: ["Text", "Utility"], heavy: false, note: "YAML reading and writing" },
       { id: "libcst", label: "LibCST", level: "Advanced", domains: ["Text", "Utility"], heavy: true, note: "Python concrete syntax tree editing" },
+      { id: "PyMuPDF", label: "PyMuPDF", level: "Standard", domains: ["Text", "Utility"], heavy: true, note: "PDF viewing and text extraction" },
+      { id: "python-calamine", label: "python-calamine", level: "Standard", domains: ["Utility"], heavy: false, note: "Excel and ODS reading backend" },
       { id: "apsw", label: "APSW", level: "Standard", domains: ["DB"], heavy: false, note: "SQLite access" },
       { id: "sqlalchemy", label: "SQLAlchemy", level: "Advanced", domains: ["DB"], heavy: true, note: "SQL toolkit" },
       { id: "affine", label: "affine", level: "Standard", domains: ["Geo", "Utility"], heavy: false, note: "Affine transformations for coordinates" },
@@ -875,12 +878,19 @@ print(" - /outputs/user_summary.csv")
       { id: "lazy_loader", label: "lazy_loader", level: "Standard", domains: ["Utility"], heavy: false, note: "Lazy imports for image and analysis stacks" },
       { id: "scikit-image", label: "scikit-image", level: "Advanced", domains: ["Image"], heavy: true, note: "Image analysis" },
       { id: "opencv-python", label: "opencv-python", level: "Advanced", domains: ["Image"], heavy: true, note: "Computer vision toolkit" },
+      { id: "wordcloud", label: "wordcloud", level: "Standard", domains: ["Plot", "Text"], heavy: false, note: "Word cloud visualization" },
       { id: "igraph", label: "igraph", level: "Standard", domains: ["Analysis", "Science"], heavy: true, note: "Graph analysis" },
+      { id: "networkx", label: "networkx", level: "Standard", domains: ["Analysis", "Science"], heavy: false, note: "General graph analysis" },
       { id: "nltk", label: "NLTK", level: "Advanced", domains: ["Text", "Science"], heavy: true, note: "Natural language toolkit" },
       { id: "biopython", label: "biopython", level: "Advanced", domains: ["Science"], heavy: true, note: "Bioinformatics tools" },
       { id: "boost-histogram", label: "boost-histogram", level: "Standard", domains: ["Analysis", "Plot"], heavy: false, note: "High-performance histogramming" },
       { id: "galpy", label: "galpy", level: "Advanced", domains: ["Science"], heavy: true, note: "Galactic dynamics" },
-      { id: "coolprop", label: "CoolProp", level: "Advanced", domains: ["Science", "Analysis"], heavy: true, note: "Thermophysical properties" }
+      { id: "coolprop", label: "CoolProp", level: "Advanced", domains: ["Science", "Analysis"], heavy: true, note: "Thermophysical properties" },
+      { id: "pyarrow", label: "pyarrow", level: "Standard", domains: ["Analysis", "Utility"], heavy: true, note: "Arrow and columnar data processing" },
+      { id: "xgboost", label: "XGBoost", level: "Advanced", domains: ["ML", "Analysis"], heavy: true, note: "Gradient boosting" },
+      { id: "tqdm", label: "tqdm", level: "Standard", domains: ["Utility"], heavy: false, note: "Progress display" },
+      { id: "toolz", label: "toolz", level: "Standard", domains: ["Utility", "Analysis"], heavy: false, note: "Functional utility helpers" },
+      { id: "decorator", label: "decorator", level: "Standard", domains: ["Utility"], heavy: false, note: "Decorator helpers" }
     ];
     const AVAILABLE_PACKAGES = PACKAGE_CATALOG.map((pkg) => pkg.id);
     const defaultConfig = {

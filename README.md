@@ -41,4 +41,8 @@ downloadable outputs, package selection, and config save/load.
 
 ## License
 
-This repository is licensed under the terms in `LICENSE`.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
+
+This project also uses third-party libraries, including Pyodide, CodeMirror, and SheetJS, which are distributed under their own licenses.
+
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for a practical summary.
