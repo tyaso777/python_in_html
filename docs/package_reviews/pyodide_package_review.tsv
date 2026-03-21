@@ -94,7 +94,7 @@ highspy	1.11.0	Included	Linear optimization solver	Keep
 html5lib	1.1	Included	Standards-compliant HTML parser	Keep
 httpcore	1.0.7	Not included	HTTP foundation library	Exclude for now
 httpx	0.28.1	Not included	HTTP client	Exclude for now
-idna	3.1	Included	IDN string handling	Keep
+idna	3.10	Included	IDN string handling	Keep
 igraph	0.11.8	Included	Graph analysis	Keep
 imageio	2.37.0	Included	Image reading and writing	Keep
 imgui-bundle	1.92.4	Not included	Unrelated to the app's current purpose and adds UI complexity	Not recommended
