@@ -27,8 +27,8 @@ import urllib.request
 from pathlib import Path
 
 
-DEFAULT_INPUT = Path("pyodide_package_review.tsv")
-DEFAULT_OUTPUT = Path("pyodide_package_review_with_licenses.tsv")
+DEFAULT_INPUT = Path("docs/package_reviews/pyodide_package_review.tsv")
+DEFAULT_OUTPUT = Path("docs/package_reviews/pyodide_package_review_with_licenses.tsv")
 
 
 def fetch_release_json(name: str, version: str, timeout: float) -> dict:
