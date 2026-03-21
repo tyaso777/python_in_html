@@ -23,32 +23,52 @@ This file is a practical notice for this repository.
 | CodeMirror 5 | Code editor UI | MIT | https://github.com/codemirror/codemirror5 |
 | SheetJS Community Edition | Excel parsing in the browser | Apache-2.0 | https://docs.sheetjs.com/docs/miscellany/license/ |
 
-## Common Pyodide Built-in Python Packages
+## Allowlisted Pyodide Packages
 
-These are representative packages used directly by the app or shown prominently in the UI.
-They keep their upstream project licenses.
+The app currently allowlists 90 Pyodide built-in packages in the package picker.
+The exact package/version set is derived from the official Pyodide packages page and
+reviewed locally in:
 
-| Package | Typical Use Here | License | Upstream |
-| --- | --- | --- | --- |
-| NumPy | arrays and numerics | BSD-3-Clause | https://numpy.org/ |
-| pandas | tabular data and CSV work | BSD-3-Clause | https://pandas.pydata.org/ |
-| SciPy | scientific computing | BSD-3-Clause | https://scipy.org/ |
-| scikit-learn | machine learning | BSD-3-Clause | https://scikit-learn.org/ |
-| Matplotlib | plotting | Matplotlib license, BSD-compatible and based on the PSF license | https://matplotlib.org/stable/project/license.html |
-| SymPy | symbolic math | BSD-3-Clause | https://www.sympy.org/ |
-| Beautiful Soup 4 | HTML parsing | MIT | https://www.crummy.com/software/BeautifulSoup/ |
-| SQLAlchemy | SQL toolkit | MIT | https://www.sqlalchemy.org/ |
+- `docs/package_reviews/pyodide_package_review.tsv`
+- `docs/package_reviews/pyodide_package_review_with_licenses.tsv`
 
-## Optional Allowlisted Packages
+Current allowlisted package names:
 
-The app also exposes many additional Pyodide built-in packages through the package picker,
-including data, plotting, text, geo, image, and science packages.
+```text
+affine, altair, apsw, astropy, attrs, autograd, beautifulsoup4, biopython,
+bleach, bokeh, boost-histogram, Bottleneck, cachetools, Cartopy, cftime,
+charset-normalizer, clarabel, click, cloudpickle, colorspacious, contourpy,
+coolprop, crc32c, css-inline, cssselect, cvxpy-base, cycler, decorator,
+docutils, fastparquet, fiona, fonttools, fsspec, galpy, geopandas, gmpy2,
+google-crc32c, h3, h5py, healpy, highspy, html5lib, idna, igraph, imageio,
+Jinja2, joblib, jsonpatch, jsonpointer, jsonschema, jsonschema_specifications,
+kiwisolver, lazy_loader, libcst, lightgbm, logbook, lxml, lz4, MarkupSafe,
+matplotlib, msgpack, networkx, nltk, numpy, opencv-python, orjson, pandas,
+Pillow, pyarrow, PyMuPDF, pyproj, python-calamine, pyyaml, rasterio, regex,
+ruamel.yaml, scikit-image, scikit-learn, scipy, shapely, simplejson,
+sqlalchemy, statsmodels, sympy, toolz, tqdm, ujson, wordcloud, xarray, xgboost
+```
 
-Those packages are:
+These packages keep their upstream licenses. License metadata for the current
+allowlist is tracked in `docs/package_reviews/pyodide_package_review_with_licenses.tsv`.
 
-- Selected from Pyodide built-ins for a pinned Pyodide release
-- Still governed by their own upstream licenses
-- Best reviewed individually before redistribution or policy approval in sensitive environments
+As of the current review snapshot, most included packages are backed by `medium`
+or `high` confidence license metadata, while a smaller set still needs closer
+manual review because the metadata is `low` or `unknown`, or because the detected
+license family is more restrictive or unusual.
+
+Packages that currently merit closer manual review include:
+
+- `apsw`
+- `biopython`
+- `crc32c`
+- `docutils`
+- `gmpy2`
+- `google-crc32c`
+- `healpy`
+- `igraph`
+- `PyMuPDF`
+- `ujson`
 
 Official Pyodide package list:
 
