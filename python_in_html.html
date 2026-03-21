@@ -446,6 +446,10 @@
       gap: 6px;
     }
 
+    .filter-group-wide {
+      grid-column: 1 / -1;
+    }
+
     .filter-panel {
       display: grid;
       grid-template-columns: fit-content(48%) auto fit-content(48%);
@@ -700,6 +704,10 @@
                     <div class="filter-label">Domain</div>
                     <div id="packageDomainFilters" class="filter-list"></div>
                   </div>
+                  <div class="filter-group filter-group-wide">
+                    <div class="filter-label">License Review</div>
+                    <div id="packageLicenseFilters" class="filter-list"></div>
+                  </div>
                 </div>
               </div>
               <div id="packageList" class="package-list"></div>
@@ -823,6 +831,108 @@ print(" - /outputs/user_summary.csv")
     const CONFIG_VERSION = 1;
     const PACKAGE_LEVELS = ["Recommended", "Standard", "Advanced", "All"];
     const PACKAGE_DOMAINS = ["Analysis", "ML", "Plot", "Text", "DB", "Image", "Geo", "Science", "Utility", "All"];
+    const PACKAGE_LICENSES_BY_ID = {
+      "affine": ["BSD"],
+      "altair": ["BSD"],
+      "apsw": ["any-OSI"],
+      "astropy": ["BSD"],
+      "attrs": ["MIT"],
+      "autograd": ["MIT"],
+      "beautifulsoup4": ["MIT"],
+      "biopython": ["Freely Distributable"],
+      "bleach": ["Apache-2.0"],
+      "bokeh": ["BSD"],
+      "boost-histogram": ["BSD", "BSL-1.0"],
+      "Bottleneck": ["BSD"],
+      "cachetools": ["MIT"],
+      "Cartopy": ["BSD"],
+      "cftime": ["MIT"],
+      "charset-normalizer": ["MIT"],
+      "clarabel": ["Apache-2.0"],
+      "click": ["BSD"],
+      "cloudpickle": ["BSD"],
+      "colorspacious": ["MIT"],
+      "contourpy": ["BSD"],
+      "coolprop": ["MIT"],
+      "crc32c": ["GPL", "LGPL"],
+      "css-inline": ["MIT"],
+      "cssselect": ["BSD"],
+      "cvxpy-base": ["Apache-2.0"],
+      "cycler": ["BSD"],
+      "decorator": ["BSD"],
+      "docutils": ["BSD", "GPL", "PSF", "Public Domain"],
+      "fastparquet": ["Apache-2.0"],
+      "fiona": ["BSD"],
+      "fonttools": ["MIT"],
+      "fsspec": ["BSD"],
+      "galpy": ["BSD"],
+      "geopandas": ["BSD"],
+      "gmpy2": ["GPL", "LGPL"],
+      "google-crc32c": ["Unknown"],
+      "h3": ["Apache-2.0"],
+      "h5py": ["BSD"],
+      "healpy": ["GPL"],
+      "highspy": ["MIT"],
+      "html5lib": ["MIT"],
+      "idna": ["BSD"],
+      "igraph": ["GPL"],
+      "imageio": ["BSD"],
+      "Jinja2": ["BSD"],
+      "joblib": ["BSD"],
+      "jsonpatch": ["BSD"],
+      "jsonpointer": ["BSD"],
+      "jsonschema": ["MIT"],
+      "jsonschema_specifications": ["MIT"],
+      "kiwisolver": ["BSD"],
+      "lazy_loader": ["BSD"],
+      "libcst": ["MIT"],
+      "lightgbm": ["MIT"],
+      "logbook": ["BSD"],
+      "lxml": ["BSD"],
+      "lz4": ["BSD"],
+      "MarkupSafe": ["BSD"],
+      "matplotlib": ["PSF"],
+      "msgpack": ["Apache-2.0"],
+      "networkx": ["BSD"],
+      "nltk": ["Apache-2.0"],
+      "numpy": ["BSD"],
+      "opencv-python": ["Apache-2.0"],
+      "orjson": ["Apache-2.0", "MIT"],
+      "pandas": ["BSD"],
+      "Pillow": ["MIT", "MIT-CMU"],
+      "pyarrow": ["Apache-2.0"],
+      "PyMuPDF": ["GPL", "AGPL-3.0-or-Commercial"],
+      "pyproj": ["MIT"],
+      "python-calamine": ["MIT"],
+      "pyyaml": ["MIT"],
+      "rasterio": ["BSD"],
+      "regex": ["Apache-2.0"],
+      "ruamel.yaml": ["MIT"],
+      "scikit-image": ["BSD"],
+      "scikit-learn": ["BSD"],
+      "scipy": ["BSD"],
+      "shapely": ["BSD"],
+      "simplejson": ["MIT", "AFL"],
+      "sqlalchemy": ["MIT"],
+      "statsmodels": ["BSD"],
+      "sympy": ["BSD"],
+      "toolz": ["BSD"],
+      "tqdm": ["MIT", "MPL-2.0"],
+      "ujson": ["Unknown"],
+      "wordcloud": ["MIT"],
+      "xarray": ["Apache-2.0"],
+      "xgboost": ["Apache-2.0"]
+    };
+    const PACKAGE_LICENSE_REVIEW_OPTIONS = ["Generally OK", "Review Needed", "All"];
+    const LICENSE_REVIEW_REQUIRED = new Set([
+      "Unknown",
+      "any-OSI",
+      "GPL",
+      "LGPL",
+      "AGPL-3.0-or-Commercial",
+      "Freely Distributable",
+      "Public Domain"
+    ]);
     const PACKAGE_CATALOG = [
       { id: "numpy", label: "NumPy", level: "Recommended", domains: ["Analysis"], heavy: false, note: "Numerical arrays" },
       { id: "pandas", label: "pandas", level: "Recommended", domains: ["Analysis"], heavy: false, note: "Tabular data and CSV work" },
@@ -915,7 +1025,14 @@ print(" - /outputs/user_summary.csv")
       { id: "toolz", label: "toolz", level: "Standard", domains: ["Utility", "Analysis"], heavy: false, note: "Functional utility helpers" },
       { id: "decorator", label: "decorator", level: "Standard", domains: ["Utility"], heavy: false, note: "Decorator helpers" }
     ];
-    const AVAILABLE_PACKAGES = PACKAGE_CATALOG.map((pkg) => pkg.id);
+    const PACKAGE_CATALOG_WITH_LICENSES = PACKAGE_CATALOG.map((pkg) => ({
+      ...pkg,
+      licenses: PACKAGE_LICENSES_BY_ID[pkg.id] || ["Unknown"],
+      licenseReview: (PACKAGE_LICENSES_BY_ID[pkg.id] || ["Unknown"]).some((license) => LICENSE_REVIEW_REQUIRED.has(license))
+        ? "Review Needed"
+        : "Generally OK"
+    }));
+    const AVAILABLE_PACKAGES = PACKAGE_CATALOG_WITH_LICENSES.map((pkg) => pkg.id);
     const defaultConfig = {
       configVersion: CONFIG_VERSION,
       packages: ["numpy", "pandas", "matplotlib"],
@@ -984,6 +1101,7 @@ print(" - /outputs/user_summary.csv")
     let loadedPackages = new Set();
     let activePackageLevel = "Recommended";
     let activePackageDomain = "All";
+    let activePackageLicenseReview = "Generally OK";
     let packageSearchQuery = "";
     let selectedPackagesState = new Set(defaultConfig.packages);
     let isCodeWrapEnabled = false;
@@ -1648,6 +1766,7 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
     function renderPackageFilters() {
       renderChipList("packageLevelFilters", PACKAGE_LEVELS, activePackageLevel, "level");
       renderChipList("packageDomainFilters", PACKAGE_DOMAINS, activePackageDomain, "domain");
+      renderChipList("packageLicenseFilters", PACKAGE_LICENSE_REVIEW_OPTIONS, activePackageLicenseReview, "license");
     }
 
     /**
@@ -1659,7 +1778,7 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
       const togglePackagesBtnEl = document.getElementById("togglePackagesBtn");
       const configSummaryTextEl = document.getElementById("configSummaryText");
       const selected = getSelectedPackages();
-      const hasHeavy = selected.some((pkgId) => PACKAGE_CATALOG.find((pkg) => pkg.id === pkgId)?.heavy);
+      const hasHeavy = selected.some((pkgId) => PACKAGE_CATALOG_WITH_LICENSES.find((pkg) => pkg.id === pkgId)?.heavy);
       packageCountEl.textContent = `${selected.length} selected${hasHeavy ? " - Heavy included" : ""}`;
       selectedEl.textContent = `Selected: ${selected.length ? selected.join(", ") : "-"}`;
       configSummaryTextEl.textContent = `Selected packages: ${selected.length ? selected.join(", ") : "(none)"}${hasHeavy ? " - Heavy included" : ""}`;
@@ -1703,16 +1822,20 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
       packageListEl.innerHTML = "";
 
       const normalizedQuery = packageSearchQuery.trim().toLowerCase();
-      const visiblePackages = PACKAGE_CATALOG.filter((pkg) => {
+      const visiblePackages = PACKAGE_CATALOG_WITH_LICENSES.filter((pkg) => {
         const matchesLevel = activePackageLevel === "All"
           || pkg.level === activePackageLevel;
         const matchesDomain = activePackageDomain === "All"
           || pkg.domains.includes(activePackageDomain);
+        const matchesLicense = activePackageLicenseReview === "All"
+          || pkg.licenseReview === activePackageLicenseReview;
         const matchesQuery = normalizedQuery.length === 0
           || pkg.id.toLowerCase().includes(normalizedQuery)
           || pkg.label.toLowerCase().includes(normalizedQuery)
-          || pkg.note.toLowerCase().includes(normalizedQuery);
-        return matchesLevel && matchesDomain && matchesQuery;
+          || pkg.note.toLowerCase().includes(normalizedQuery)
+          || pkg.licenses.join(" ").toLowerCase().includes(normalizedQuery)
+          || pkg.licenseReview.toLowerCase().includes(normalizedQuery);
+        return matchesLevel && matchesDomain && matchesLicense && matchesQuery;
       }).sort((a, b) => {
         const byLabel = a.label.localeCompare(b.label, "en", { sensitivity: "base" });
         return byLabel !== 0
@@ -1770,7 +1893,8 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
 
         const note = document.createElement("div");
         note.className = "package-note";
-        note.textContent = `${pkg.id} | ${pkg.domains.join(", ")} | ${pkg.note}`;
+        note.textContent = `${pkg.id} | ${pkg.domains.join(", ")} | ${pkg.licenses.join(", ")} | ${pkg.licenseReview} | ${pkg.note}`;
+        note.title = `Licenses: ${pkg.licenses.join(", ")} | Review: ${pkg.licenseReview}`;
 
         label.appendChild(checkbox);
         content.appendChild(main);
@@ -2830,6 +2954,22 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
       }
 
       activePackageDomain = filterButton.dataset.domain || "All";
+      renderPackageFilters();
+      renderPackageOptions();
+    });
+
+    document.getElementById("packageLicenseFilters").addEventListener("click", (event) => {
+      const filterButton = event.target.closest("[data-license]");
+      if (!filterButton) {
+        return;
+      }
+
+      const licenseReview = filterButton.dataset.license;
+      if (!licenseReview) {
+        return;
+      }
+
+      activePackageLicenseReview = licenseReview;
       renderPackageFilters();
       renderPackageOptions();
     });

@@ -303,14 +303,33 @@ print("cell 2")</code></pre>
     <div class="section">
       <h2>8. Package Filters</h2>
       <p>
-        In the package picker, packages can be filtered by two axes at the same time:
+        In the package picker, packages can be filtered by three axes at the same time:
       </p>
       <ul>
         <li><strong>Level</strong>: <code>Recommended</code>, <code>Standard</code>, <code>Advanced</code>, <code>All</code></li>
         <li><strong>Domain</strong>: <code>Analysis</code>, <code>ML</code>, <code>Plot</code>, <code>Text</code>, <code>DB</code>, <code>Image</code>, <code>Geo</code>, <code>Science</code>, <code>Utility</code>, <code>All</code></li>
+        <li><strong>License Review</strong>: <code>Generally OK</code>, <code>Review Needed</code>, <code>All</code></li>
       </ul>
       <p>
-        The search box works together with both filters.
+        The search box works together with all filters.
+      </p>
+      <p>
+        Each package row also shows a short normalized license label such as <code>MIT</code>, <code>BSD</code>, or <code>Apache-2.0</code>, together with its <code>License Review</code> tag.
+      </p>
+      <h3>How License Review is determined</h3>
+      <p>
+        <code>License Review</code> is a practical UI classification based on package metadata.
+        It is meant as a conservative screening aid for internal use, not as legal advice.
+      </p>
+      <ul>
+        <li><strong>Generally OK</strong>: assigned when the package only matches commonly accepted permissive-style labels in this app's normalization step, such as <code>MIT</code>, <code>BSD</code>, <code>Apache-2.0</code>, <code>PSF</code>, <code>MPL-2.0</code>, <code>AFL</code>, or <code>BSL-1.0</code></li>
+        <li><strong>Review Needed</strong>: assigned when the normalized result includes a value that should be checked manually, such as <code>Unknown</code>, <code>GPL</code>, <code>LGPL</code>, <code>AGPL-3.0-or-Commercial</code>, <code>Freely Distributable</code>, <code>Public Domain</code>, or <code>any-OSI</code></li>
+      </ul>
+      <p>
+        If a package has multiple detected licenses, it is marked as <code>Review Needed</code> when any one of them falls into the manual-review group.
+      </p>
+      <p>
+        The initial filter state is <code>Generally OK</code>, so the package list starts in the more conservative view by default.
       </p>
     </div>
 
