@@ -39,6 +39,13 @@ downloadable outputs, package selection, and config save/load.
 
 - In-app guide: `docs/guide.html`
 
+The repository also includes a folder-import demo in:
+
+- `samples/folder_input_demo/`
+- `samples/folder_input_demo_config.json`
+
+See `docs/guide.html` for the recommended flow.
+
 ## Package Review Files
 
 - `docs/package_reviews/pyodide_package_review.tsv`: review table based on the official Pyodide packages page, with local review columns such as `Status`, `Description`, and `Decision`

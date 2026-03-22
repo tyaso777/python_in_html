@@ -367,6 +367,7 @@ print("cell 2")</code></pre>
 
     <div class="section">
       <h2>10. Sample Use Case</h2>
+      <h3>Files Import Demo</h3>
       <p>
         Sample CSV files are stored in the repository under <code>samples/</code>.
         After you select them in the app, read them from <code>/inputs/</code>.
@@ -376,38 +377,19 @@ print("cell 2")</code></pre>
         <li><code>sample_user.csv</code></li>
         <li><code>sample_purchase.csv</code></li>
       </ul>
+      <p>
+        Recommended flow:
+      </p>
+      <ul>
+        <li>Use <strong>Choose Files</strong> to select <code>sample_user.csv</code> and <code>sample_purchase.csv</code></li>
+        <li>Use the default code that is already loaded when the app opens</li>
+        <li>Run the cells</li>
+      </ul>
+      <p>
+        The default code already reads these files and generates both a joined summary table and output files, so you do not need to paste code manually.
+      </p>
 
-      <pre><code>import pandas as pd
-import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-
-users = pd.read_csv("/inputs/sample_user.csv")
-purchases = pd.read_csv("/inputs/sample_purchase.csv")
-
-df = pd.merge(purchases, users, on="user_id", how="left")
-
-summary = (
-    df.groupby("user_name")["amount"]
-    .sum()
-    .reset_index()
-    .sort_values("amount", ascending=False)
-)
-
-print(summary)
-
-plt.figure(figsize=(8, 4))
-plt.bar(summary["user_name"], summary["amount"])
-plt.title("Total Purchase Amount by User")
-plt.xlabel("User")
-plt.ylabel("Amount")
-plt.xticks(rotation=30)
-plt.tight_layout()
-plt.savefig("/outputs/user_total.png", dpi=140)
-
-summary.to_csv("/outputs/user_summary.csv", index=False)</code></pre>
-
+      <h3>Config + Folder Demo</h3>
       <p>
         For folder selection testing, use <code>samples/folder_input_demo/</code> with <code>Choose Folder</code>.
         A ready-to-load app config is stored in <code>samples/folder_input_demo_config.json</code>.
@@ -430,30 +412,9 @@ summary.to_csv("/outputs/user_summary.csv", index=False)</code></pre>
         <li>Review the folder preview and click <strong>Import Folder</strong></li>
         <li>Run the cells</li>
       </ul>
-      <pre><code>import json
-import os
-import pandas as pd
-
-for root, _, files in os.walk("/inputs"):
-    for name in sorted(files):
-        print(os.path.join(root, name))
-
-users = pd.read_csv("/inputs/folder_input_demo/users/master.csv")
-sales_2024 = pd.read_csv("/inputs/folder_input_demo/sales/2024/summary.csv")
-sales_2025 = pd.read_csv("/inputs/folder_input_demo/sales/2025/summary.csv")
-
-sales_2024["year"] = 2024
-sales_2025["year"] = 2025
-
-report = pd.concat([sales_2024, sales_2025], ignore_index=True).merge(users, on="user_id", how="left")
-
-with open("/inputs/folder_input_demo/config/targets.json", "r", encoding="utf-8") as f:
-    print(json.load(f))
-
-print(pd.read_excel("/inputs/folder_input_demo/excel/book.xlsx", sheet_name="Main"))
-print(pd.read_excel("/inputs/folder_input_demo/excel/unicode.xlsx", sheet_name="祝日"))
-
-print(report)</code></pre>
+      <p>
+        The sample config already contains the Python code and required package selection, so you do not need to paste code manually.
+      </p>
     </div>
 
     <div class="section">
