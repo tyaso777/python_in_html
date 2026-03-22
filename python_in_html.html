@@ -217,6 +217,28 @@
       padding-right: 6px;
     }
 
+    .input-preview-box {
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border: 1px solid #e2c36b;
+      border-radius: 8px;
+      background: #fff8e1;
+    }
+
+    .input-preview-title {
+      margin: 0 0 8px 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: #7a5400;
+    }
+
+    .input-preview-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
     .section-divider {
       height: 1px;
       background: #e1e1e1;
@@ -726,11 +748,14 @@
         <div class="upload-actions">
           <p class="muted">Input files</p>
           <label for="fileInput" class="file-input-label">Choose Files</label>
+          <label for="folderInput" class="file-input-label">Choose Folder</label>
           <input id="fileInput" class="file-input" type="file" multiple accept=".csv,.txt,.json,.xlsx,.xls" />
+          <input id="folderInput" class="file-input" type="file" multiple webkitdirectory />
         </div>
         <div class="upload-divider" aria-hidden="true"></div>
         <div class="upload-summary">
           <p class="muted">Input files</p>
+          <div id="folderImportPreview"></div>
           <div id="inputFiles" class="input-files-box">
             <div class="muted" style="margin-bottom: 6px; font-size: 12px;">
               Excel files are supported through the app compatibility adapter. Use pd.read_excel("/inputs/your_file.xlsx", ...).
@@ -1113,9 +1138,15 @@ print(" - /outputs/user_summary.csv")
     let configPanelHeight = null;
     let inputPanelHeight = null;
     const excelWorkbookCache = new Map();
+    const MAX_INPUT_FILE_COUNT = 200;
+    const MAX_INPUT_TOTAL_BYTES = 100 * 1024 * 1024;
+    const MAX_INPUT_FILE_BYTES = 20 * 1024 * 1024;
+    const ALLOWED_INPUT_EXTENSIONS = new Set([".csv", ".txt", ".json", ".xlsx", ".xls"]);
+    const INPUT_PREVIEW_FILE_LIMIT = 12;
 
     /** @type {Map<string, File>} */
     let currentFiles = new Map();
+    let pendingFolderSelection = null;
 
     /**
      * Append text to the console pane.
@@ -1139,22 +1170,22 @@ print(" - /outputs/user_summary.csv")
     }
 
     /**
-     * Check whether a file name should be treated as an Excel workbook.
-     * @param {string} fileName
+     * Check whether a path should be treated as an Excel workbook.
+     * @param {string} filePath
      * @returns {boolean}
      */
-    function isExcelFileName(fileName) {
-      return /\.(xlsx|xls)$/i.test(fileName);
+    function isExcelFileName(filePath) {
+      return /\.(xlsx|xls)$/i.test(filePath);
     }
 
     /**
      * Parse an Excel file and cache worksheet rows for the compatibility adapter.
      * @param {File} file
-     * @param {string} safeName
+     * @param {string} safeRelativePath
      * @returns {Promise<string[]>}
      */
-    async function cacheExcelWorkbook(file, safeName) {
-      const inputPath = `/inputs/${safeName}`;
+    async function cacheExcelWorkbook(file, safeRelativePath) {
+      const inputPath = getInputPath(safeRelativePath);
       const sheetNames = [];
 
       if (typeof XLSX === "undefined") {
@@ -1178,7 +1209,7 @@ print(" - /outputs/user_summary.csv")
 
       excelWorkbookCache.set(inputPath, {
         inputPath,
-        fileName: safeName,
+        fileName: safeRelativePath,
         sheetNames,
         sheets
       });
@@ -1927,23 +1958,79 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
     }
 
     /**
-     * Replace unsafe characters in input file names.
-     * @param {string} fileName
+     * Replace unsafe characters in a path segment.
+     * @param {string} segment
      * @returns {string}
      */
-    function sanitizeFileName(fileName) {
-      return fileName
+    function sanitizePathSegment(segment) {
+      return String(segment || "")
         .replace(/[\/\\]/g, "_")
-        .replace(/[\u0000-\u001f\u007f]/g, "_");
+        .replace(/[\u0000-\u001f\u007f]/g, "_")
+        .trim() || "_";
     }
 
     /**
-     * Build the internal input path from a sanitized name.
-     * @param {string} safeName
+     * Build a safe relative input path while preserving directory structure.
+     * @param {string} filePath
      * @returns {string}
      */
-    function getInputPath(safeName) {
-      return `/inputs/${safeName}`;
+    function sanitizeRelativeInputPath(filePath) {
+      const rawSegments = String(filePath || "")
+        .split(/[\/\\]+/)
+        .map((segment) => segment.trim())
+        .filter((segment) => segment && segment !== "." && segment !== "..");
+
+      if (!rawSegments.length) {
+        return "unnamed";
+      }
+
+      return rawSegments.map((segment) => sanitizePathSegment(segment)).join("/");
+    }
+
+    /**
+     * Return the original relative path for a selected file.
+     * @param {File} file
+     * @returns {string}
+     */
+    function getOriginalRelativeInputPath(file) {
+      return String(file.webkitRelativePath || file.name || "").trim();
+    }
+
+    /**
+     * Build a safe relative path for a selected file.
+     * @param {File} file
+     * @returns {string}
+     */
+    function getSafeRelativeInputPath(file) {
+      return sanitizeRelativeInputPath(getOriginalRelativeInputPath(file));
+    }
+
+    /**
+     * Return the lowercase extension for an input path.
+     * @param {string} filePath
+     * @returns {string}
+     */
+    function getFileExtension(filePath) {
+      const match = /\.([^.]+)$/.exec(String(filePath || ""));
+      return match ? `.${match[1].toLowerCase()}` : "";
+    }
+
+    /**
+     * Return whether an input file path is allowed in the browser UI.
+     * @param {string} filePath
+     * @returns {boolean}
+     */
+    function isAllowedInputFilePath(filePath) {
+      return ALLOWED_INPUT_EXTENSIONS.has(getFileExtension(filePath));
+    }
+
+    /**
+     * Build the internal input path from a sanitized relative path.
+     * @param {string} safeRelativePath
+     * @returns {string}
+     */
+    function getInputPath(safeRelativePath) {
+      return `/inputs/${safeRelativePath}`;
     }
 
     /**
@@ -1971,16 +2058,208 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
     /**
      * Format a user-facing input file label while keeping the internal path visible.
      * @param {File} file
-     * @param {string} safeName
+     * @param {string} safeRelativePath
      * @returns {string}
      */
-    function formatInputFileLabel(file, safeName) {
-      const inputPath = getInputPath(safeName);
-      if (file.name === safeName) {
+    function formatInputFileLabel(file, safeRelativePath) {
+      const inputPath = getInputPath(safeRelativePath);
+      const originalRelativePath = getOriginalRelativeInputPath(file);
+      if (originalRelativePath === safeRelativePath) {
         return `${inputPath} (${formatFileSize(file.size)})`;
       }
 
-      return `${file.name} -> ${inputPath} (${formatFileSize(file.size)})`;
+      return `${originalRelativePath} -> ${inputPath} (${formatFileSize(file.size)})`;
+    }
+
+    /**
+     * Build a user-facing skip reason for an input file.
+     * @param {string} originalRelativePath
+     * @param {string} reason
+     * @returns {string}
+     */
+    function formatSkippedInputReason(originalRelativePath, reason) {
+      return `${originalRelativePath}: skipped because ${reason}`;
+    }
+
+    /**
+     * Analyze a batch of selected input files without mutating currentFiles.
+     * @param {FileList | File[]} files
+     * @returns {{
+     *   selectedCount: number,
+     *   selectedBytes: number,
+     *   acceptedFiles: { file: File, safeRelativePath: string }[],
+     *   acceptedLabels: string[],
+     *   acceptedBytes: number,
+     *   skippedFiles: string[]
+     * }}
+     */
+    function analyzeInputSelection(files) {
+      const selectedFiles = Array.from(files);
+      const acceptedFiles = [];
+      const acceptedLabels = [];
+      const skippedFiles = [];
+      let totalBytes = 0;
+      let selectedBytes = 0;
+      let acceptedBytes = 0;
+
+      for (const existingFile of currentFiles.values()) {
+        totalBytes += existingFile.size || 0;
+      }
+
+      for (const file of selectedFiles) {
+        selectedBytes += file.size || 0;
+
+        const originalRelativePath = getOriginalRelativeInputPath(file);
+        const safeRelativePath = getSafeRelativeInputPath(file);
+        const extension = getFileExtension(safeRelativePath);
+
+        if (!isAllowedInputFilePath(safeRelativePath)) {
+          skippedFiles.push(
+            formatSkippedInputReason(
+              originalRelativePath,
+              `unsupported file type ${extension || "(no extension)"}`
+            )
+          );
+          continue;
+        }
+
+        if (file.size > MAX_INPUT_FILE_BYTES) {
+          skippedFiles.push(
+            formatSkippedInputReason(
+              originalRelativePath,
+              `file size ${formatFileSize(file.size)} exceeds the ${formatFileSize(MAX_INPUT_FILE_BYTES)} per-file limit`
+            )
+          );
+          continue;
+        }
+
+        const replacedFile = currentFiles.get(safeRelativePath);
+        const nextFileCount = currentFiles.has(safeRelativePath) ? currentFiles.size : currentFiles.size + acceptedFiles.length + 1;
+        if (nextFileCount > MAX_INPUT_FILE_COUNT) {
+          skippedFiles.push(
+            formatSkippedInputReason(
+              originalRelativePath,
+              `the ${MAX_INPUT_FILE_COUNT}-file limit would be exceeded`
+            )
+          );
+          continue;
+        }
+
+        const currentAcceptedEntry = acceptedFiles.find((entry) => entry.safeRelativePath === safeRelativePath);
+        const currentAcceptedSize = currentAcceptedEntry ? currentAcceptedEntry.file.size || 0 : 0;
+        const projectedTotalBytes =
+          totalBytes -
+          (replacedFile ? replacedFile.size || 0 : 0) -
+          currentAcceptedSize +
+          (file.size || 0);
+        if (projectedTotalBytes > MAX_INPUT_TOTAL_BYTES) {
+          skippedFiles.push(
+            formatSkippedInputReason(
+              originalRelativePath,
+              `total selected size would become ${formatFileSize(projectedTotalBytes)}, above the ${formatFileSize(MAX_INPUT_TOTAL_BYTES)} limit`
+            )
+          );
+          continue;
+        }
+
+        totalBytes = projectedTotalBytes;
+        if (currentAcceptedEntry) {
+          acceptedBytes -= currentAcceptedEntry.file.size || 0;
+          currentAcceptedEntry.file = file;
+        } else {
+          acceptedFiles.push({ file, safeRelativePath });
+        }
+
+        acceptedBytes += file.size || 0;
+      }
+
+      for (const entry of acceptedFiles) {
+        acceptedLabels.push(formatInputFileLabel(entry.file, entry.safeRelativePath));
+      }
+
+      return {
+        selectedCount: selectedFiles.length,
+        selectedBytes,
+        acceptedFiles,
+        acceptedLabels,
+        acceptedBytes,
+        skippedFiles
+      };
+    }
+
+    /**
+     * Render the pending folder import preview.
+     */
+    function renderPendingFolderSelection() {
+      const previewEl = document.getElementById("folderImportPreview");
+      previewEl.innerHTML = "";
+
+      if (!pendingFolderSelection) {
+        return;
+      }
+
+      const boxEl = document.createElement("div");
+      boxEl.className = "input-preview-box";
+
+      const titleEl = document.createElement("div");
+      titleEl.className = "input-preview-title";
+      titleEl.textContent = "Folder Import Preview";
+      boxEl.appendChild(titleEl);
+
+      appendTextListSection(boxEl, "Summary", [
+        `Selected: ${pendingFolderSelection.selectedCount} file(s)`,
+        `Selected size: ${formatFileSize(pendingFolderSelection.selectedBytes)}`,
+        `Accepted: ${pendingFolderSelection.acceptedFiles.length} file(s)`,
+        `Accepted size: ${formatFileSize(pendingFolderSelection.acceptedBytes)}`,
+        `Skipped: ${pendingFolderSelection.skippedFiles.length} file(s)`,
+        `Limits: ${MAX_INPUT_FILE_COUNT} files, ${formatFileSize(MAX_INPUT_TOTAL_BYTES)} total, ${formatFileSize(MAX_INPUT_FILE_BYTES)} per file`
+      ]);
+
+      if (pendingFolderSelection.acceptedLabels.length) {
+        const previewAccepted = pendingFolderSelection.acceptedLabels.slice(0, INPUT_PREVIEW_FILE_LIMIT);
+        if (pendingFolderSelection.acceptedLabels.length > INPUT_PREVIEW_FILE_LIMIT) {
+          previewAccepted.push(`... and ${pendingFolderSelection.acceptedLabels.length - INPUT_PREVIEW_FILE_LIMIT} more accepted file(s)`);
+        }
+        appendTextListSection(boxEl, "Accepted Preview", previewAccepted);
+      }
+
+      if (pendingFolderSelection.skippedFiles.length) {
+        const previewSkipped = pendingFolderSelection.skippedFiles.slice(0, INPUT_PREVIEW_FILE_LIMIT);
+        if (pendingFolderSelection.skippedFiles.length > INPUT_PREVIEW_FILE_LIMIT) {
+          previewSkipped.push(`... and ${pendingFolderSelection.skippedFiles.length - INPUT_PREVIEW_FILE_LIMIT} more skipped file(s)`);
+        }
+        appendTextListSection(boxEl, "Skipped Preview", previewSkipped);
+      }
+
+      const actionsEl = document.createElement("div");
+      actionsEl.className = "input-preview-actions";
+
+      const importBtn = document.createElement("button");
+      importBtn.type = "button";
+      importBtn.textContent = pendingFolderSelection.acceptedFiles.length
+        ? `Import Folder (${pendingFolderSelection.acceptedFiles.length} files)`
+        : "Import Folder";
+      importBtn.disabled = pendingFolderSelection.acceptedFiles.length === 0;
+      importBtn.addEventListener("click", () => {
+        importPendingFolderSelection().catch((error) => {
+          const operation = createOperationCard("Import Folder Failed");
+          operation.consoleEl.textContent = String(error) + "\n";
+          setStatus("Failed.");
+        });
+      });
+      actionsEl.appendChild(importBtn);
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.type = "button";
+      cancelBtn.textContent = "Cancel";
+      cancelBtn.addEventListener("click", () => {
+        pendingFolderSelection = null;
+        renderPendingFolderSelection();
+      });
+      actionsEl.appendChild(cancelBtn);
+
+      boxEl.appendChild(actionsEl);
+      previewEl.appendChild(boxEl);
     }
 
     /**
@@ -1998,6 +2277,12 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
       const codeEl = document.createElement("code");
       codeEl.textContent = 'pd.read_excel("/inputs/your_file.xlsx", ...)';
       noteEl.appendChild(codeEl);
+
+      noteEl.append(". Folder selection keeps subdirectories under ");
+
+      const pathCodeEl = document.createElement("code");
+      pathCodeEl.textContent = "/inputs";
+      noteEl.appendChild(pathCodeEl);
 
       noteEl.append(". ");
 
@@ -2063,13 +2348,13 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
 
       const list = document.createElement("ul");
 
-      for (const [safeName, file] of currentFiles.entries()) {
+      for (const [safeRelativePath, file] of currentFiles.entries()) {
         const li = document.createElement("li");
-        const inputPath = getInputPath(safeName);
+        const inputPath = getInputPath(safeRelativePath);
         const excelWorkbook = excelWorkbookCache.get(inputPath);
 
         const nameSpan = document.createElement("span");
-        nameSpan.textContent = `${file.name} `;
+        nameSpan.textContent = `${getOriginalRelativeInputPath(file)} `;
         li.appendChild(nameSpan);
 
         const sizeSpan = document.createElement("span");
@@ -2083,12 +2368,12 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
         deleteBtn.className = "small-btn";
         deleteBtn.style.marginLeft = "8px";
         deleteBtn.addEventListener("click", () => {
-          currentFiles.delete(safeName);
+          currentFiles.delete(safeRelativePath);
           excelWorkbookCache.delete(inputPath);
           renderInputFiles();
 
           const operation = createOperationCard("Delete File", { includeConsole: false });
-          appendTextListSection(operation.bodyEl, "Deleted Files", [formatInputFileLabel(file, safeName)]);
+          appendTextListSection(operation.bodyEl, "Deleted Files", [formatInputFileLabel(file, safeRelativePath)]);
         });
         li.appendChild(deleteBtn);
 
@@ -2115,18 +2400,67 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
     }
 
     /**
+     * Apply analyzed input files to the current selection.
+     * @param {{
+     *   selectedCount: number,
+     *   selectedBytes: number,
+     *   acceptedFiles: { file: File, safeRelativePath: string }[],
+     *   acceptedLabels: string[],
+     *   acceptedBytes: number,
+     *   skippedFiles: string[]
+     * }} analysis
+     * @param {string} sourceLabel
+     */
+    function applyInputSelectionAnalysis(analysis, sourceLabel) {
+      for (const { file, safeRelativePath } of analysis.acceptedFiles) {
+        const inputPath = getInputPath(safeRelativePath);
+        excelWorkbookCache.delete(inputPath);
+        currentFiles.set(safeRelativePath, file);
+      }
+
+      renderInputFiles();
+
+      if (analysis.acceptedLabels.length) {
+        const operation = createOperationCard(sourceLabel, { includeConsole: false });
+        appendTextListSection(operation.bodyEl, "Selected Files", analysis.acceptedLabels);
+      }
+    }
+
+    /**
+     * Import the currently pending folder selection.
+     * @returns {Promise<void>}
+     */
+    async function importPendingFolderSelection() {
+      if (!pendingFolderSelection) {
+        return;
+      }
+
+      applyInputSelectionAnalysis(pendingFolderSelection, "Import Folder");
+      pendingFolderSelection = null;
+      renderPendingFolderSelection();
+    }
+
+    /**
      * Write current input files into /inputs.
      * @returns {Promise<string[]>}
      */
     async function writeInputsToFs() {
       ensureDir("/inputs");
       clearDir("/inputs");
+      excelWorkbookCache.clear();
 
       const savedPaths = [];
-      for (const [safeName, file] of currentFiles.entries()) {
+      for (const [safeRelativePath, file] of currentFiles.entries()) {
         const bytes = new Uint8Array(await file.arrayBuffer());
-        const path = `/inputs/${safeName}`;
+        const path = getInputPath(safeRelativePath);
+        const parentPath = path.slice(0, path.lastIndexOf("/"));
+        if (parentPath) {
+          ensureDir(parentPath);
+        }
         pyodide.FS.writeFile(path, bytes);
+        if (isExcelFileName(safeRelativePath)) {
+          await cacheExcelWorkbook(file, safeRelativePath);
+        }
         savedPaths.push(path);
       }
 
@@ -2712,7 +3046,7 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
       ensureDir("/outputs");
       await writeInputsToFs();
 
-      const inputPaths = Array.from(currentFiles.keys()).map((name) => `/inputs/${name}`);
+      const inputPaths = Array.from(currentFiles.keys()).map((safeRelativePath) => getInputPath(safeRelativePath));
       const pyPaths = pyodide.toPy(inputPaths);
       pyodide.globals.set("input_paths", pyPaths);
       pyPaths.destroy();
@@ -2794,29 +3128,14 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
 
     /**
      * Add files to the current file set.
-     * If the same sanitized file name already exists, replace it.
+     * If the same sanitized relative path already exists, replace it.
      * @param {FileList | File[]} files
+     * @param {{ sourceLabel?: string }} [options]
      */
-    async function setFiles(files) {
-      const addedFiles = [];
-
-      for (const file of Array.from(files)) {
-        const safeName = sanitizeFileName(file.name);
-        const inputPath = getInputPath(safeName);
-        excelWorkbookCache.delete(inputPath);
-        currentFiles.set(safeName, file);
-        addedFiles.push(formatInputFileLabel(file, safeName));
-        if (isExcelFileName(safeName)) {
-          await cacheExcelWorkbook(file, safeName);
-        }
-      }
-
-      renderInputFiles();
-
-      if (addedFiles.length) {
-        const operation = createOperationCard("Choose Files", { includeConsole: false });
-        appendTextListSection(operation.bodyEl, "Selected Files", addedFiles);
-      }
+    async function setFiles(files, options = {}) {
+      const sourceLabel = options.sourceLabel || "Choose Files";
+      const analysis = analyzeInputSelection(files);
+      applyInputSelectionAnalysis(analysis, sourceLabel);
     }
 
     /**
@@ -3081,7 +3400,7 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
     });
 
     document.getElementById("fileInput").addEventListener("change", (event) => {
-      setFiles(event.target.files || []).catch((error) => {
+      setFiles(event.target.files || [], { sourceLabel: "Choose Files" }).catch((error) => {
         const operation = createOperationCard("Choose Files Failed");
         operation.consoleEl.textContent = String(error) + "\n";
         setStatus("Failed.");
@@ -3089,10 +3408,38 @@ if not getattr(pd.read_excel, "_python_in_html_excel_adapter", False):
       event.target.value = "";
     });
 
+    document.getElementById("folderInput").addEventListener("click", () => {
+      if (pendingFolderSelection) {
+        pendingFolderSelection = null;
+        renderPendingFolderSelection();
+      }
+    });
+
+    document.getElementById("fileInput").addEventListener("click", () => {
+      if (pendingFolderSelection) {
+        pendingFolderSelection = null;
+        renderPendingFolderSelection();
+      }
+    });
+
+    document.getElementById("folderInput").addEventListener("change", (event) => {
+      try {
+        pendingFolderSelection = analyzeInputSelection(event.target.files || []);
+        renderPendingFolderSelection();
+        setStatus("Folder selected. Review the summary before importing.");
+      } catch (error) {
+        const operation = createOperationCard("Choose Folder Failed");
+        operation.consoleEl.textContent = String(error) + "\n";
+        setStatus("Failed.");
+      }
+      event.target.value = "";
+    });
+
     renderPackageFilters();
     renderPackageOptions();
     renderConfigPanel();
     renderPackagePanel();
+    renderPendingFolderSelection();
     syncInputPanelHeight();
     applyConfig(getDefaultConfig());
     initCodeEditor();

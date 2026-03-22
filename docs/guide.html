@@ -177,12 +177,17 @@
       <h2>3. Input Files</h2>
       <p>
         Input files are selected with the <code>Choose Files</code> button.
+        If you want to load a sample dataset with nested directories, use <code>Choose Folder</code>.
         Supported file types in the current UI are <code>.csv</code>, <code>.json</code>, <code>.txt</code>, <code>.xlsx</code>, and <code>.xls</code>.
       </p>
       <p>
         Selected files are stored in the browser-side virtual file system under:
       </p>
       <div class="path">/inputs/your_file_name</div>
+      <p>
+        Folder selection keeps relative paths under <code>/inputs/</code>.
+      </p>
+      <div class="path">/inputs/your_folder/subdir/your_file_name</div>
 
       <p>Example:</p>
       <pre><code>import pandas as pd
@@ -192,6 +197,10 @@ df = pd.read_csv("/inputs/sample_user.csv")</code></pre>
       <div class="warn">
         File names must match exactly.
         For example, <code>sample_user.csv</code> and <code>sample-user.csv</code> are different names.
+      </div>
+      <div class="note">
+        When you choose a folder, files with the same base name can coexist if they are in different subdirectories,
+        such as <code>/inputs/sales/2024/summary.csv</code> and <code>/inputs/sales/2025/summary.csv</code>.
       </div>
 
       <h3 id="excel-compatibility">Excel Compatibility Mode</h3>
@@ -398,6 +407,53 @@ plt.tight_layout()
 plt.savefig("/outputs/user_total.png", dpi=140)
 
 summary.to_csv("/outputs/user_summary.csv", index=False)</code></pre>
+
+      <p>
+        For folder selection testing, use <code>samples/folder_input_demo/</code> with <code>Choose Folder</code>.
+        A ready-to-load app config is stored in <code>samples/folder_input_demo_config.json</code>.
+      </p>
+      <p>
+        That folder also includes two Excel samples:
+        <code>/inputs/folder_input_demo/excel/book.xlsx</code> and
+        <code>/inputs/folder_input_demo/excel/unicode.xlsx</code>.
+      </p>
+      <p>
+        It also includes two intentionally skipped files under <code>folder_input_demo/ignored/</code> so that you can verify
+        the per-file skip reasons in the result card.
+      </p>
+      <p>
+        Recommended flow:
+      </p>
+      <ul>
+        <li>Use <strong>Load Config</strong> to open <code>samples/folder_input_demo_config.json</code></li>
+        <li>Use <strong>Choose Folder</strong> to select <code>samples/folder_input_demo/</code></li>
+        <li>Review the folder preview and click <strong>Import Folder</strong></li>
+        <li>Run the cells</li>
+      </ul>
+      <pre><code>import json
+import os
+import pandas as pd
+
+for root, _, files in os.walk("/inputs"):
+    for name in sorted(files):
+        print(os.path.join(root, name))
+
+users = pd.read_csv("/inputs/folder_input_demo/users/master.csv")
+sales_2024 = pd.read_csv("/inputs/folder_input_demo/sales/2024/summary.csv")
+sales_2025 = pd.read_csv("/inputs/folder_input_demo/sales/2025/summary.csv")
+
+sales_2024["year"] = 2024
+sales_2025["year"] = 2025
+
+report = pd.concat([sales_2024, sales_2025], ignore_index=True).merge(users, on="user_id", how="left")
+
+with open("/inputs/folder_input_demo/config/targets.json", "r", encoding="utf-8") as f:
+    print(json.load(f))
+
+print(pd.read_excel("/inputs/folder_input_demo/excel/book.xlsx", sheet_name="Main"))
+print(pd.read_excel("/inputs/folder_input_demo/excel/unicode.xlsx", sheet_name="祝日"))
+
+print(report)</code></pre>
     </div>
 
     <div class="section">

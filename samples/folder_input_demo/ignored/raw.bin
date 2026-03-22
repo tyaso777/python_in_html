@@ -1,0 +1,2 @@
+This binary-like placeholder is intentionally stored with a .bin extension.
+It should be skipped by the folder input picker because `.bin` is not an allowed input type.
